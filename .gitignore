@@ -1,0 +1,29 @@
+.vs/
+bin/
+obj/
+Debug/
+Release/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+TestResults/
+*.dbmdl
+*.jfm
+
+# ASP.NET Core
+appsettings.Development.json
+
+# Logs
+*.log
+
+# User-specific files
+launchSettings.json
+
+# Publish output
+publish/
+wwwroot/uploads/
+
+# OS files
+Thumbs.db
+.DS_Store

@@ -1,0 +1,221 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title>
+        @ViewData["Title"] - BillCollection
+    </title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <link rel="stylesheet"
+          href="~/css/site.css"
+          asp-append-version="true" />
+
+    <link rel="stylesheet"
+          href="~/BillCollection.styles.css"
+          asp-append-version="true" />
+</head>
+
+<body>
+
+    <!-- ========================= -->
+    <!-- NAVBAR -->
+    <!-- ========================= -->
+
+    <header>
+
+        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow mb-3">
+
+            <div class="container-fluid">
+
+                <!-- Logo -->
+                <a class="navbar-brand fw-bold"
+                   asp-controller="Home"
+                   asp-action="Index">
+
+                    Bill Collection
+
+                </a>
+
+
+                <!-- Mobile Menu Button -->
+                <button class="navbar-toggler"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target=".navbar-collapse"
+                        aria-controls="navbarSupportedContent"
+                        aria-expanded="false"
+                        aria-label="Toggle navigation">
+
+                    <span class="navbar-toggler-icon"></span>
+
+                </button>
+
+
+                <!-- Navbar Content -->
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+
+
+                    <!-- ========================= -->
+                    <!-- LEFT MENU -->
+                    <!-- ========================= -->
+
+                    <ul class="navbar-nav flex-grow-1">
+
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+
+                            <!-- Head Office Menu -->
+                            @if (User.IsInRole("HeadOffice"))
+                            {
+                                <li class="nav-item">
+
+                                    <a class="nav-link text-dark"
+                                       asp-controller="Admin"
+                                       asp-action="Index">
+
+                                        Admin Dashboard
+
+                                    </a>
+
+                                </li>
+                            }
+
+
+                            <!-- Branch Menu -->
+                            @if (User.IsInRole("Branch"))
+                            {
+                                <li class="nav-item">
+
+                                    <a class="nav-link text-dark"
+                                       asp-controller="Branch"
+                                       asp-action="Index">
+
+                                        Branch Dashboard
+
+                                    </a>
+
+                                </li>
+                            }
+
+                        }
+
+                    </ul>
+
+
+                    <!-- ========================= -->
+                    <!-- RIGHT SIDE -->
+                    <!-- ========================= -->
+
+                    <ul class="navbar-nav align-items-center">
+
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item">
+                                <span class="navbar-text me-3">
+                                    Welcome,
+                                    <strong>@User.Identity.Name</strong>
+                                </span>
+                            </li>
+
+                            <li class="nav-item">
+                                <form asp-controller="Account"
+                                      asp-action="Logout"
+                                      method="post"
+                                      class="d-inline">
+
+                                    @Html.AntiForgeryToken()
+
+                                    <button type="submit"
+                                            class="btn btn-danger btn-sm">
+                                        Logout
+                                    </button>
+
+                                </form>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="Account"
+                                   asp-action="Login">
+                                    Login
+                                </a>
+                            </li>
+                        }
+
+                    </ul>
+                </div>
+
+            </div>
+
+        </nav>
+
+    </header>
+
+
+    <!-- ========================= -->
+    <!-- MAIN CONTENT -->
+    <!-- ========================= -->
+
+    <div class="container">
+
+        <main role="main"
+              class="pb-3">
+
+            @RenderBody()
+
+        </main>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- FOOTER -->
+    <!-- ========================= -->
+
+    <footer class="border-top footer text-muted">
+
+        <div class="container">
+
+            &copy; 2026 - BillCollection -
+
+            <a asp-controller="Home"
+               asp-action="Privacy">
+
+                Privacy
+
+            </a>
+
+        </div>
+
+    </footer>
+
+
+    <!-- ========================= -->
+    <!-- SCRIPTS -->
+    <!-- ========================= -->
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="~/js/site.js"
+            asp-append-version="true">
+    </script>
+
+    @await RenderSectionAsync(
+    "Scripts",
+        required: false)
+
+</body>
+
+</html>

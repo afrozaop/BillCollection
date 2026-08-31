@@ -1,0 +1,108 @@
+﻿@model BillCollection.Models.LoginViewModel
+
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+
+            <div class="card shadow">
+
+                <div class="card-header text-center">
+                    <h3 class="mb-1">Bill Collection Portal</h3>
+                    <p class="mb-0 text-muted">User Login</p>
+                </div>
+
+                <div class="card-body">
+
+                    @* Controller থেকে আসা Error *@
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger">
+                            @ViewBag.Error
+                        </div>
+                    }
+
+                    @* Model Validation Error *@
+                    <div asp-validation-summary="ModelOnly"
+                         class="alert alert-danger">
+                    </div>
+
+                    <form asp-controller="Account"
+                          asp-action="Login"
+                          method="post"
+                          autocomplete="off">
+
+                        @Html.AntiForgeryToken()
+
+                        <!-- Username -->
+                        <div class="mb-3">
+                            <label asp-for="Username"
+                                   class="form-label fw-bold">
+                                Username
+                            </label>
+
+                            <input asp-for="Username"
+                                   class="form-control"
+                                   placeholder="Enter username"
+                                   autocomplete="username" />
+
+                            <span asp-validation-for="Username"
+                                  class="text-danger">
+                            </span>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label asp-for="Password"
+                                   class="form-label fw-bold">
+                                Password
+                            </label>
+
+                            <input asp-for="Password"
+                                   type="password"
+                                   class="form-control"
+                                   placeholder="Enter password"
+                                   autocomplete="current-password" />
+
+                            <span asp-validation-for="Password"
+                                  class="text-danger">
+                            </span>
+                        </div>
+
+                        <!-- Remember Me -->
+                        <div class="form-check mb-4">
+                            <input asp-for="RememberMe"
+                                   class="form-check-input" />
+
+                            <label asp-for="RememberMe"
+                                   class="form-check-label">
+                                Remember me
+                            </label>
+                        </div>
+
+                        <!-- Login Button -->
+                        <div class="d-grid">
+                            <button type="submit"
+                                    class="btn btn-primary btn-lg">
+                                Login
+                            </button>
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+
+    <partial name="_ValidationScriptsPartial" />
+
+}

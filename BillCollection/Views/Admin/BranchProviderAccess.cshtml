@@ -1,0 +1,569 @@
+﻿@using BillCollection.Models
+
+@{
+    ViewData["Title"] = "Branch Provider Access";
+
+    var branches = ViewBag.Branches as List<Branch>
+        ?? new List<Branch>();
+
+    var providers = ViewBag.Providers as List<BillProvider>
+        ?? new List<BillProvider>();
+
+    var selectedProviderIds = ViewBag.SelectedProviderIds as List<int>
+        ?? new List<int>();
+
+    int? selectedBranchId = ViewBag.SelectedBranchId;
+}
+
+<div class="container-fluid mt-4">
+
+    <!-- PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-diagram-3 me-2"></i>
+                Branch Provider Access
+            </h2>
+
+            <p class="text-muted mb-0">
+                Manage bill providers available to each branch.
+            </p>
+        </div>
+
+        <a asp-controller="Admin"
+           asp-action="Index"
+           class="btn btn-outline-secondary">
+
+            <i class="bi bi-arrow-left me-1"></i>
+            Dashboard
+
+        </a>
+
+    </div>
+
+
+    <!-- SUCCESS MESSAGE -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show"
+             role="alert">
+
+            <i class="bi bi-check-circle-fill me-2"></i>
+
+            <strong>Success!</strong>
+            @TempData["Success"]
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert">
+            </button>
+
+        </div>
+    }
+
+
+    <!-- ERROR MESSAGE -->
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show"
+             role="alert">
+
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+
+            <strong>Error!</strong>
+            @TempData["Error"]
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert">
+            </button>
+
+        </div>
+    }
+
+
+    <div class="row g-4">
+
+        <!-- ================================================= -->
+        <!-- LEFT : BRANCH -->
+        <!-- ================================================= -->
+
+        <div class="col-lg-5">
+
+            <div class="card shadow-sm border-0">
+
+                <div class="card-header bg-primary text-white">
+
+                    <h5 class="mb-0">
+                        <i class="bi bi-building me-2"></i>
+                        Select Branch
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <form asp-controller="Admin"
+                          asp-action="BranchProviderAccess"
+                          method="get">
+
+                        <div class="mb-3">
+
+                            <label class="form-label fw-semibold">
+                                Branch
+                            </label>
+
+                            <select name="branchId"
+                                    class="form-select form-select-lg"
+                                    onchange="this.form.submit()">
+
+                                <option value="">
+                                    -- Select Branch --
+                                </option>
+
+                                @foreach (var branch in branches)
+                                {
+                                    if (selectedBranchId.HasValue &&
+                                    selectedBranchId.Value == branch.Id)
+                                    {
+                                        <option value="@branch.Id"
+                                                selected>
+                                            @branch.BranchCode -
+                                            @branch.Name
+                                        </option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@branch.Id">
+                                            @branch.BranchCode -
+                                            @branch.Name
+                                        </option>
+                                    }
+                                }
+
+                            </select>
+
+                        </div>
+
+                    </form>
+
+
+                    <!-- SELECTED BRANCH -->
+                    @if (selectedBranchId.HasValue)
+                    {
+                        var selectedBranch =
+                        branches.FirstOrDefault(
+                        x => x.Id == selectedBranchId.Value);
+
+                        if (selectedBranch != null)
+                        {
+                            <div class="alert alert-primary mb-0">
+
+                                <div class="d-flex align-items-center">
+
+                                    <i class="bi bi-building-fill fs-3 me-3"></i>
+
+                                    <div>
+
+                                        <div class="small text-muted">
+                                            Selected Branch
+                                        </div>
+
+                                        <div class="fw-bold">
+                                            @selectedBranch.BranchCode
+                                        </div>
+
+                                        <div>
+                                            @selectedBranch.Name
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        }
+                    }
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- RIGHT : PROVIDERS -->
+        <!-- ================================================= -->
+
+        <div class="col-lg-7">
+
+            <div class="card shadow-sm border-0">
+
+                <div class="card-header bg-dark text-white
+                            d-flex justify-content-between
+                            align-items-center">
+
+                    <h5 class="mb-0">
+                        <i class="bi bi-credit-card me-2"></i>
+                        Bill Provider Access
+                    </h5>
+
+                    @if (selectedBranchId.HasValue)
+                    {
+                        <span class="badge bg-success">
+                            Branch Selected
+                        </span>
+                    }
+
+                </div>
+
+
+                <div class="card-body">
+
+
+                    <!-- NO BRANCH -->
+                    @if (!selectedBranchId.HasValue)
+                    {
+                        <div class="text-center py-5">
+
+                            <i class="bi bi-building"
+                               style="font-size:60px;">
+                            </i>
+
+                            <h5 class="fw-bold mt-3">
+                                Select a Branch
+                            </h5>
+
+                            <p class="text-muted">
+                                Select a branch from the left
+                                to manage its bill provider access.
+                            </p>
+
+                        </div>
+                    }
+
+                    else
+                    {
+
+                        <!-- ================================================= -->
+                        <!-- SAVE FORM -->
+                        <!-- ================================================= -->
+
+                        <form asp-controller="Admin"
+                              asp-action="BranchProviderAccess"
+                              method="post"
+                              id="providerAccessForm">
+
+                            @Html.AntiForgeryToken()
+
+
+                            <!-- IMPORTANT -->
+                            <input type="hidden"
+                                   name="branchId"
+                                   value="@selectedBranchId" />
+
+
+                            <!-- PROVIDER TITLE -->
+
+                            <div class="d-flex justify-content-between
+                                            align-items-center mb-3">
+
+                                <div>
+
+                                    <h6 class="fw-bold mb-1">
+                                        Available Bill Providers
+                                    </h6>
+
+                                    <small class="text-muted">
+                                        Select the providers allowed
+                                        for this branch.
+                                    </small>
+
+                                </div>
+
+                                <span class="badge bg-primary"
+                                      id="selectedCount">
+
+                                    @selectedProviderIds.Count Selected
+
+                                </span>
+
+                            </div>
+
+
+                            <!-- PROVIDERS -->
+
+                            <div class="row g-3">
+
+                                @if (providers.Any())
+                                {
+                                    foreach (var provider in providers)
+                                    {
+                                        bool isChecked =
+                                        selectedProviderIds
+                                        .Contains(provider.Id);
+
+                                        <div class="col-md-6">
+
+                                            <div class="card h-100
+                                                            @(isChecked
+                                                                                                     ? "border-success"
+                                                                                                     : "")">
+
+                                    <div class="card-body">
+
+                                                    <div class="form-check">
+
+                                                        <input type="checkbox"
+                                                               class="form-check-input provider-checkbox"
+                                                               name="providerIds"
+                                                               value="@provider.Id"
+                                                               id="provider_@provider.Id"
+                                                               @(isChecked ? "checked" : "") />
+
+                                                        <label class="form-check-label fw-semibold"
+                                                               for="provider_@provider.Id">
+
+                                                            @provider.ProviderName
+
+                                                        </label>
+
+                                                    </div>
+
+                                                    <small class="text-muted ms-4">
+                                                        @provider.ProviderCode
+                                                    </small>
+
+                                                </div>
+
+                                            </div>
+
+                                        </div>
+                                                        }
+                                }
+                                else
+                                {
+                                    <div class="col-12">
+
+                                        <div class="alert alert-warning">
+                                            No active bill providers found.
+                                        </div>
+
+                                    </div>
+                                }
+
+                            </div>
+
+
+                            <!-- ACTIONS -->
+                            @if (providers.Any())
+                            {
+                                <hr class="my-4" />
+
+                                <div class="d-flex
+                                                    justify-content-between
+                                                    align-items-center">
+
+                                    <div>
+
+                                        <button type="button"
+                                                id="btnSelectAll"
+                                                class="btn btn-outline-primary btn-sm">
+
+                                            <i class="bi bi-check-all me-1"></i>
+                                            Select All
+
+                                        </button>
+
+                                        <button type="button"
+                                                id="btnClearAll"
+                                                class="btn btn-outline-secondary btn-sm">
+
+                                            <i class="bi bi-x-circle me-1"></i>
+                                            Clear All
+
+                                        </button>
+
+                                    </div>
+
+
+                                    <button type="submit"
+                                            id="btnSave"
+                                            class="btn btn-success px-4">
+
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        Save Access
+
+                                    </button>
+
+                                </div>
+                            }
+
+                        </form>
+                    }
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+@section Scripts
+{
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const form =
+                document.getElementById("providerAccessForm");
+
+            const checkboxes =
+                document.querySelectorAll(".provider-checkbox");
+
+            const btnSelectAll =
+                document.getElementById("btnSelectAll");
+
+            const btnClearAll =
+                document.getElementById("btnClearAll");
+
+            const btnSave =
+                document.getElementById("btnSave");
+
+            const selectedCount =
+                document.getElementById("selectedCount");
+
+
+            // ==========================================
+            // UPDATE COUNT
+            // ==========================================
+
+            function updateCount() {
+
+                const count =
+                    document.querySelectorAll(
+                        ".provider-checkbox:checked"
+                    ).length;
+
+                if (selectedCount) {
+
+                    selectedCount.innerText =
+                        count + " Selected";
+
+                }
+            }
+
+
+            // ==========================================
+            // SELECT ALL
+            // ==========================================
+
+            if (btnSelectAll) {
+
+                btnSelectAll.addEventListener(
+                    "click",
+                    function () {
+
+                        checkboxes.forEach(
+                            function (checkbox) {
+
+                                checkbox.checked = true;
+
+                            }
+                        );
+
+                        updateCount();
+
+                    }
+                );
+            }
+
+
+            // ==========================================
+            // CLEAR ALL
+            // ==========================================
+
+            if (btnClearAll) {
+
+                btnClearAll.addEventListener(
+                    "click",
+                    function () {
+
+                        checkboxes.forEach(
+                            function (checkbox) {
+
+                                checkbox.checked = false;
+
+                            }
+                        );
+
+                        updateCount();
+
+                    }
+                );
+            }
+
+
+            // ==========================================
+            // CHECKBOX CHANGE
+            // ==========================================
+
+            checkboxes.forEach(
+                function (checkbox) {
+
+                    checkbox.addEventListener(
+                        "change",
+                        function () {
+
+                            updateCount();
+
+                        }
+                    );
+
+                }
+            );
+
+
+            // ==========================================
+            // SAVE
+            // ==========================================
+
+            if (form) {
+
+                form.addEventListener(
+                    "submit",
+                    function () {
+
+                        if (btnSave) {
+
+                            btnSave.disabled = true;
+
+                            btnSave.innerHTML =
+                                '<span class="spinner-border spinner-border-sm me-2"></span>' +
+                                'Saving...';
+
+                        }
+
+                    }
+                );
+
+            }
+
+
+            // ==========================================
+            // INITIAL COUNT
+            // ==========================================
+
+            updateCount();
+
+        });
+
+    </script>
+}

@@ -1,0 +1,446 @@
+﻿@{
+    ViewData["Title"] = "Admin Dashboard";
+
+    int branchCount = ViewBag.BranchCount ?? 0;
+    int userCount = ViewBag.UserCount ?? 0;
+    int providerCount = ViewBag.ProviderCount ?? 0;
+    int assignmentCount = ViewBag.AssignmentCount ?? 0;
+}
+
+<div class="container-fluid mt-4">
+
+    <!-- ===================================================== -->
+    <!-- PAGE HEADER -->
+    <!-- ===================================================== -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-speedometer2 me-2"></i>
+                Admin Dashboard
+            </h2>
+
+            <p class="text-muted mb-0">
+                Manage branches, users, bill providers and access.
+            </p>
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- STATISTICS -->
+    <!-- ===================================================== -->
+
+    <div class="row g-4 mb-4">
+
+        <!-- Branches -->
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between
+                                align-items-center">
+
+                        <div>
+
+                            <p class="text-muted mb-1">
+                                Total Branches
+                            </p>
+
+                            <h2 class="fw-bold mb-0">
+                                @branchCount
+                            </h2>
+
+                        </div>
+
+                        <div class="bg-primary bg-opacity-10
+                                    rounded-circle p-3">
+
+                            <i class="bi bi-building text-primary fs-3">
+                            </i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Users -->
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between
+                                align-items-center">
+
+                        <div>
+
+                            <p class="text-muted mb-1">
+                                Total Users
+                            </p>
+
+                            <h2 class="fw-bold mb-0">
+                                @userCount
+                            </h2>
+
+                        </div>
+
+                        <div class="bg-success bg-opacity-10
+                                    rounded-circle p-3">
+
+                            <i class="bi bi-people text-success fs-3">
+                            </i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Bill Providers -->
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between
+                                align-items-center">
+
+                        <div>
+
+                            <p class="text-muted mb-1">
+                                Bill Providers
+                            </p>
+
+                            <h2 class="fw-bold mb-0">
+                                @providerCount
+                            </h2>
+
+                        </div>
+
+                        <div class="bg-warning bg-opacity-10
+                                    rounded-circle p-3">
+
+                            <i class="bi bi-credit-card text-warning fs-3">
+                            </i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Assignments -->
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between
+                                align-items-center">
+
+                        <div>
+
+                            <p class="text-muted mb-1">
+                                Provider Assignments
+                            </p>
+
+                            <h2 class="fw-bold mb-0">
+                                @assignmentCount
+                            </h2>
+
+                        </div>
+
+                        <div class="bg-info bg-opacity-10
+                                    rounded-circle p-3">
+
+                            <i class="bi bi-diagram-3 text-info fs-3">
+                            </i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- MANAGEMENT -->
+    <!-- ===================================================== -->
+
+    <div class="row g-4">
+
+        <!-- Branch Provider Access -->
+
+        <div class="col-lg-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-header bg-dark text-white">
+
+                    <h5 class="mb-0">
+                        <i class="bi bi-diagram-3 me-2"></i>
+                        Branch Provider Access
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <p class="text-muted">
+                        Assign bill providers to individual branches
+                        and control which providers each branch can use.
+                    </p>
+
+                    <div class="d-flex justify-content-between
+                                align-items-center">
+
+                        <div>
+
+                            <span class="badge bg-info">
+                                @assignmentCount Assignments
+                            </span>
+
+                        </div>
+
+                        <a asp-controller="Admin"
+                           asp-action="BranchProviderAccess"
+                           class="btn btn-primary">
+
+                            <i class="bi bi-gear me-1"></i>
+                            Manage Access
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Bill Providers -->
+
+        <div class="col-lg-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-header bg-primary text-white">
+
+                    <h5 class="mb-0">
+                        <i class="bi bi-credit-card me-2"></i>
+                        Bill Providers
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <p class="text-muted">
+                        Create, edit and manage bill providers
+                        available in the system.
+                    </p>
+
+                    <div class="d-flex justify-content-between
+                                align-items-center">
+
+                        <div>
+
+                            <span class="badge bg-primary">
+                                @providerCount Providers
+                            </span>
+
+                        </div>
+
+                        <a asp-controller="Admin"
+                           asp-action="BillProviders"
+                           class="btn btn-primary">
+
+                            <i class="bi bi-list me-1"></i>
+                            Manage Providers
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Branches -->
+
+        <div class="col-lg-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-header bg-success text-white">
+
+                    <h5 class="mb-0">
+                        <i class="bi bi-building me-2"></i>
+                        Branches
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <p class="text-muted">
+                        Total active branches available in the system.
+                    </p>
+
+                    <div class="d-flex justify-content-between
+                                align-items-center">
+
+                        <span class="fs-4 fw-bold">
+                            @branchCount
+                        </span>
+
+                        <span class="badge bg-success">
+                            Active Branches
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Users -->
+
+        <div class="col-lg-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-header bg-secondary text-white">
+
+                    <h5 class="mb-0">
+                        <i class="bi bi-people me-2"></i>
+                        Users
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <p class="text-muted">
+                        Total users registered in the system.
+                    </p>
+
+                    <div class="d-flex justify-content-between
+                                align-items-center">
+
+                        <span class="fs-4 fw-bold">
+                            @userCount
+                        </span>
+
+                        <span class="badge bg-secondary">
+                            System Users
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- QUICK ACTIONS -->
+    <!-- ===================================================== -->
+
+    <div class="card border-0 shadow-sm mt-4">
+
+        <div class="card-header">
+
+            <h5 class="mb-0 fw-bold">
+                <i class="bi bi-lightning-charge me-2"></i>
+                Quick Actions
+            </h5>
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="d-flex flex-wrap gap-2">
+
+                <a asp-controller="Admin"
+                   asp-action="BranchProviderAccess"
+                   class="btn btn-outline-primary">
+
+                    <i class="bi bi-diagram-3 me-1"></i>
+                    Branch Provider Access
+
+                </a>
+
+
+          @*       <a asp-controller="Admin"
+                   asp-action="BillProviders"
+                   class="btn btn-outline-success">
+
+                    <i class="bi bi-credit-card me-1"></i>
+                    Bill Providers
+
+                </a>
+
+
+                <a asp-controller="Admin"
+                   asp-action="CreateBillProvider"
+                   class="btn btn-outline-dark">
+
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Add Bill Provider
+
+                </a> *@
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
