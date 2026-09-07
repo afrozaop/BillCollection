@@ -87,7 +87,7 @@
 
                                 </li>
                             }
-
+                         
 
                             <!-- Branch Menu -->
                             @if (User.IsInRole("Branch"))
@@ -104,7 +104,13 @@
 
                                 </li>
                             }
-
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="Account"
+                                   asp-action="ChangePassword">
+                                    Change Password
+                                </a>
+                            </li>
                         }
 
                     </ul>
@@ -140,6 +146,13 @@
 
                                 </form>
                             </li>
+                           @*  <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="Account"
+                                   asp-action="ChangePassword">
+                                    Change Password
+                                </a>
+                            </li> *@
                         }
                         else
                         {

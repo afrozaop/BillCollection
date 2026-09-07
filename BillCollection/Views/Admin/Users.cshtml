@@ -1,0 +1,287 @@
+﻿@model IEnumerable<BillCollection.Models.AppUser>
+
+@{
+    ViewData["Title"] = "Manage Users";
+}
+
+<div class="container-fluid mt-4">
+
+
+    <!-- PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-people-fill"></i>
+                Manage Users
+            </h2>
+
+            <p class="text-muted mb-0">
+                Manage branch users and reset passwords.
+            </p>
+        </div>
+
+        <a asp-controller="Admin"
+           asp-action="Index"
+           class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Dashboard
+        </a>
+
+    </div>
+
+
+    <!-- SUCCESS MESSAGE -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show"
+             role="alert">
+
+            <i class="bi bi-check-circle-fill"></i>
+
+            @TempData["Success"]
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert">
+            </button>
+
+        </div>
+    }
+
+
+    <!-- ERROR MESSAGE -->
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show"
+             role="alert">
+
+            <i class="bi bi-exclamation-triangle-fill"></i>
+
+            @TempData["Error"]
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert">
+            </button>
+
+        </div>
+    }
+
+
+    <!-- USERS CARD -->
+    <div class="card shadow-sm border-0">
+
+        <div class="card-header bg-dark text-white">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <h5 class="mb-0">
+                    <i class="bi bi-person-lines-fill"></i>
+                    User List
+                </h5>
+
+                <span class="badge bg-light text-dark">
+                    Total:
+                    @Model.Count()
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="card-body">
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+
+                    <table class="table table-bordered table-hover align-middle"
+                           id="usersTable">
+
+                        <thead class="table-light">
+
+                            <tr>
+
+                                <th style="width:70px;">
+                                    #
+                                </th>
+
+                                <th>
+                                    Username
+                                </th>
+
+                                <th>
+                                    Role
+                                </th>
+
+                                <th>
+                                    Status
+                                </th>
+
+                                <th style="width:220px;">
+                                    Action
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            @{
+                                int serial = 1;
+                            }
+
+                            @foreach (var user in Model)
+                            {
+                                <tr>
+
+                                    <!-- SERIAL -->
+                                    <td>
+                                        @serial
+                                    </td>
+
+
+                                    <!-- USERNAME -->
+                                    <td>
+                                        <strong>
+                                            @user.Username
+                                        </strong>
+                                    </td>
+
+
+                                    <!-- ROLE -->
+                                    <td>
+
+                                        @if (user.Role == "HeadOffice")
+                                        {
+                                            <span class="badge bg-primary">
+                                                <i class="bi bi-shield-fill"></i>
+                                                HeadOffice
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-info text-dark">
+                                                <i class="bi bi-building"></i>
+                                                @user.Role
+                                            </span>
+                                        }
+
+                                    </td>
+
+
+                                    <!-- STATUS -->
+                                    <td>
+
+                                        @if (user.IsActive)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i>
+                                                Active
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-x-circle"></i>
+                                                Inactive
+                                            </span>
+                                        }
+
+                                    </td>
+
+
+                                    <!-- ACTION -->
+                                    <td>
+
+                                        @if (user.IsActive)
+                                        {
+                                            <a asp-controller="Admin"
+                                               asp-action="ResetPassword"
+                                               asp-route-id="@user.Id"
+                                               class="btn btn-warning btn-sm">
+
+                                                <i class="bi bi-key-fill"></i>
+                                                Reset Password
+
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-secondary btn-sm"
+                                                    disabled>
+
+                                                <i class="bi bi-lock-fill"></i>
+                                                Inactive
+
+                                            </button>
+                                        }
+
+                                    </td>
+
+                                </tr>
+
+                                serial++;
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+
+                    <i class="bi bi-people"
+                       style="font-size:50px;">
+                    </i>
+
+                    <h5 class="mt-3">
+                        No users found
+                    </h5>
+
+                    <p class="text-muted">
+                        There are no users available.
+                    </p>
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+   
+
+</div>
+
+@section Scripts
+{
+    <script>
+
+         
+              $(document).ready(function () {
+
+                  if ($.fn.DataTable) {
+
+                      $('#usersTable').DataTable({
+                          pageLength: 25,
+                          ordering: true,
+                          searching: true,
+                          lengthChange: true,
+                          responsive: true
+                      });
+
+                  }
+
+              });
+
+    </script>
+   
+
+}

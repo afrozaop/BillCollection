@@ -1,4 +1,5 @@
-﻿@{
+﻿
+@{
     ViewData["Title"] = "Admin Dashboard";
 
     int branchCount = ViewBag.BranchCount ?? 0;
@@ -346,7 +347,9 @@
         </div>
 
 
-        <!-- Users -->
+        <!-- ================================================= -->
+        <!-- USERS -->
+        <!-- ================================================= -->
 
         <div class="col-lg-6">
 
@@ -364,19 +367,31 @@
                 <div class="card-body">
 
                     <p class="text-muted">
-                        Total users registered in the system.
+                        Manage system users, view user information
+                        and reset passwords.
                     </p>
 
                     <div class="d-flex justify-content-between
                                 align-items-center">
 
-                        <span class="fs-4 fw-bold">
-                            @userCount
-                        </span>
+                        <div>
 
-                        <span class="badge bg-secondary">
-                            System Users
-                        </span>
+                            <span class="badge bg-secondary">
+                                @userCount System Users
+                            </span>
+
+                        </div>
+
+                        <!-- USERS BUTTON -->
+
+                        <a asp-controller="Admin"
+                           asp-action="Users"
+                           class="btn btn-secondary">
+
+                            <i class="bi bi-people-fill me-1"></i>
+                            Manage Users
+
+                        </a>
 
                     </div>
 
@@ -408,6 +423,9 @@
 
             <div class="d-flex flex-wrap gap-2">
 
+
+                <!-- Branch Provider Access -->
+
                 <a asp-controller="Admin"
                    asp-action="BranchProviderAccess"
                    class="btn btn-outline-primary">
@@ -418,7 +436,24 @@
                 </a>
 
 
-          @*       <a asp-controller="Admin"
+                <!-- ================================================= -->
+                <!-- USERS -->
+                <!-- ================================================= -->
+
+                <a asp-controller="Admin"
+                   asp-action="Users"
+                   class="btn btn-outline-secondary">
+
+                    <i class="bi bi-people-fill me-1"></i>
+                    Manage Users
+
+                </a>
+
+
+                @*
+                <!-- Bill Providers -->
+
+                <a asp-controller="Admin"
                    asp-action="BillProviders"
                    class="btn btn-outline-success">
 
@@ -428,6 +463,8 @@
                 </a>
 
 
+                <!-- Add Bill Provider -->
+
                 <a asp-controller="Admin"
                    asp-action="CreateBillProvider"
                    class="btn btn-outline-dark">
@@ -435,7 +472,8 @@
                     <i class="bi bi-plus-circle me-1"></i>
                     Add Bill Provider
 
-                </a> *@
+                </a>
+                *@
 
             </div>
 

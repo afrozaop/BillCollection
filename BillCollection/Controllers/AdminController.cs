@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
 
 namespace BillCollection.Controllers
 {
@@ -40,6 +41,14 @@ namespace BillCollection.Controllers
             ViewBag.AssignmentCount = assignmentCount;
 
             return View();
+        }
+
+
+        // USERS LIST //
+        [HttpGet] public async Task<IActionResult> Users() 
+        {
+            var users = await _context.AppUsers .AsNoTracking() .OrderBy(x => x.Username) .ToListAsync(); 
+            return View(users); 
         }
 
 
@@ -235,7 +244,6 @@ namespace BillCollection.Controllers
             var selectedProviderIds =
                 new List<int>();
 
-
             if (branchId.HasValue)
             {
                 selectedProviderIds =
@@ -266,7 +274,6 @@ namespace BillCollection.Controllers
             ViewBag.SelectedBranchId =
                 branchId;
 
-
             return View();
         }
 
@@ -282,10 +289,13 @@ namespace BillCollection.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> BranchProviderAccess(
-     int branchId,
-     int[] providerIds)
+            int branchId,
+            int[] providerIds)
         {
-            // Check Branch
+            // -----------------------------------------------------
+            // CHECK BRANCH
+            // -----------------------------------------------------
+
             var branch = await _context.Branches
                 .FirstOrDefaultAsync(x =>
                     x.Id == branchId &&
@@ -293,33 +303,50 @@ namespace BillCollection.Controllers
 
             if (branch == null)
             {
-                TempData["Error"] = "Branch not found.";
+                TempData["Error"] =
+                    "Branch not found.";
 
                 return RedirectToAction(
                     nameof(BranchProviderAccess));
             }
 
-            // Selected Provider IDs
+
+            // -----------------------------------------------------
+            // SELECTED PROVIDER IDS
+            // -----------------------------------------------------
+
             var selectedIds = providerIds?
                 .Distinct()
                 .ToList()
                 ?? new List<int>();
 
 
-            // Existing assignments
-            var existing = await _context.BranchBillProviders
-                .Where(x => x.BranchId == branchId)
-                .ToListAsync();
+            // -----------------------------------------------------
+            // EXISTING ASSIGNMENTS
+            // -----------------------------------------------------
+
+            var existing =
+                await _context.BranchBillProviders
+                    .Where(x =>
+                        x.BranchId == branchId)
+                    .ToListAsync();
 
 
-            // Remove old assignments
+            // -----------------------------------------------------
+            // REMOVE OLD ASSIGNMENTS
+            // -----------------------------------------------------
+
             if (existing.Any())
             {
-                _context.BranchBillProviders.RemoveRange(existing);
+                _context.BranchBillProviders
+                    .RemoveRange(existing);
             }
 
 
-            // Add new assignments
+            // -----------------------------------------------------
+            // ADD NEW ASSIGNMENTS
+            // -----------------------------------------------------
+
             if (selectedIds.Any())
             {
                 var validProviderIds =
@@ -346,20 +373,134 @@ namespace BillCollection.Controllers
             }
 
 
-            // Save
+            // -----------------------------------------------------
+            // SAVE
+            // -----------------------------------------------------
+
             await _context.SaveChangesAsync();
 
 
-            // Success message
             TempData["Success"] =
                 "Branch provider access updated successfully.";
 
 
-            // IMPORTANT:
-            // Go back to first page.
-            // No branch will be selected.
             return RedirectToAction(
                 nameof(BranchProviderAccess));
+        }
+
+
+        // =========================================================
+        // RESET BRANCH USER PASSWORD
+        // =========================================================
+
+        // GET: /Admin/ResetPassword/1050
+        // =========================================================
+
+        [HttpGet]
+        public async Task<IActionResult> ResetPassword(int id)
+        {
+            var user = await _context.AppUsers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            return View(user);
+        }
+
+
+        // =========================================================
+        // CONFIRM RESET PASSWORD
+        // =========================================================
+
+        // POST: /Admin/ResetPasswordConfirm/1050
+        // =========================================================
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPasswordConfirm(int id)
+        {
+            var user = await _context.AppUsers
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            // =====================================================
+            // DEFAULT RESET PASSWORD
+            // =====================================================
+
+            const string defaultPassword = "Test@12345";
+
+
+            // =====================================================
+            // CREATE NEW PBKDF2 HASH
+            // =====================================================
+
+            user.PasswordHash =
+                CreatePasswordHash(defaultPassword);
+
+
+            // =====================================================
+            // SAVE TO DATABASE
+            // =====================================================
+
+            await _context.SaveChangesAsync();
+
+
+            // =====================================================
+            // SUCCESS MESSAGE
+            // =====================================================
+
+            TempData["Success"] =
+                $"Password for {user.Username} has been reset successfully.";
+
+
+            // =====================================================
+            // GO BACK TO USERS PAGE
+            // =====================================================
+
+            return RedirectToAction("Users");
+        }
+
+
+        // =========================================================
+        // CREATE PBKDF2 PASSWORD HASH
+        // =========================================================
+
+        private string CreatePasswordHash(string password)
+        {
+            const int iterations = 100000;
+
+            using var rng =
+                RandomNumberGenerator.Create();
+
+            byte[] salt = new byte[16];
+
+            rng.GetBytes(salt);
+
+
+            using var pbkdf2 =
+                new Rfc2898DeriveBytes(
+                    password,
+                    salt,
+                    iterations,
+                    HashAlgorithmName.SHA256);
+
+
+            byte[] hash =
+                pbkdf2.GetBytes(32);
+
+
+            return
+                $"{iterations}." +
+                $"{Convert.ToBase64String(salt)}." +
+                $"{Convert.ToBase64String(hash)}";
         }
     }
 }

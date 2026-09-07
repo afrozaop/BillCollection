@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Diagnostics;
 using System.Security.Claims;
 using System.Security.Cryptography;
 
@@ -30,12 +29,11 @@ namespace BillCollection.Controllers
             return View();
         }
 
+
         // =========================
         // LOGIN - POST
         // =========================
 
-        
-        [HttpPost]
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
@@ -77,24 +75,25 @@ namespace BillCollection.Controllers
             // =========================
 
             var claims = new List<Claim>
-    {
-        new Claim(
-            ClaimTypes.NameIdentifier,
-            user.Id.ToString()),
+            {
+                new Claim(
+                    ClaimTypes.NameIdentifier,
+                    user.Id.ToString()),
 
-        new Claim(
-            ClaimTypes.Name,
-            user.Username),
+                new Claim(
+                    ClaimTypes.Name,
+                    user.Username),
 
-        new Claim(
-            ClaimTypes.GivenName,
-            user.DisplayName),
+                new Claim(
+                    ClaimTypes.GivenName,
+                    user.DisplayName),
 
-        new Claim(
-            ClaimTypes.Role,
-            user.Role)
-    };
+                new Claim(
+                    ClaimTypes.Role,
+                    user.Role)
+            };
 
+            // BranchId Claim
             if (user.BranchId.HasValue)
             {
                 claims.Add(new Claim(
@@ -139,6 +138,7 @@ namespace BillCollection.Controllers
                     "Branch");
             }
 
+            // Invalid Role
             await HttpContext.SignOutAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme);
 
@@ -148,31 +148,120 @@ namespace BillCollection.Controllers
 
             return View(model);
         }
+
+
+        // =========================
+        // CHANGE PASSWORD - GET
+        // =========================
+
+        [HttpGet]
+        [Authorize]
+        public IActionResult ChangePassword()
+        {
+            return View();
+        }
+
+
+        // =========================
+        // CHANGE PASSWORD - POST
+        // =========================
+
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(
+            ChangePasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            // Get currently logged-in username
+            var username = User.Identity?.Name;
+
+            if (string.IsNullOrEmpty(username))
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            // Find current logged-in user
+            var user = await _context.AppUsers
+                .FirstOrDefaultAsync(x =>
+                    x.Username == username &&
+                    x.IsActive);
+
+            if (user == null)
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            // =========================
+            // VERIFY CURRENT PASSWORD
+            // =========================
+
+            if (!VerifyPassword(
+                model.CurrentPassword,
+                user.PasswordHash))
+            {
+                ModelState.AddModelError(
+                    "CurrentPassword",
+                    "Current password is incorrect.");
+
+                return View(model);
+            }
+
+            // =========================
+            // CREATE NEW PASSWORD HASH
+            // =========================
+
+            user.PasswordHash =
+                CreatePasswordHash(model.NewPassword);
+
+            // Save
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] =
+                "Password changed successfully.";
+
+            return RedirectToAction(
+                nameof(ChangePassword));
+        }
+
+
+        // =========================
+        // TEST PASSWORD
+        // =========================
+
         [AllowAnonymous]
         public IActionResult TestPassword()
         {
-            string newHash = CreatePasswordHash("Test@12345");
+            string newHash =
+                CreatePasswordHash("Test@12345");
 
             return Content(newHash);
         }
-     
+
+
         // =========================
         // CREATE PASSWORD HASH
         // =========================
 
-        private static string CreatePasswordHash(string password)
+        private static string CreatePasswordHash(
+            string password)
         {
             int iterations = 100000;
 
-            byte[] salt = RandomNumberGenerator.GetBytes(16);
+            byte[] salt =
+                RandomNumberGenerator.GetBytes(16);
 
-            using var pbkdf2 = new Rfc2898DeriveBytes(
-                password,
-                salt,
-                iterations,
-                HashAlgorithmName.SHA256);
+            using var pbkdf2 =
+                new Rfc2898DeriveBytes(
+                    password,
+                    salt,
+                    iterations,
+                    HashAlgorithmName.SHA256);
 
-            byte[] hash = pbkdf2.GetBytes(32);
+            byte[] hash =
+                pbkdf2.GetBytes(32);
 
             return $"{iterations}." +
                    $"{Convert.ToBase64String(salt)}." +
@@ -191,13 +280,18 @@ namespace BillCollection.Controllers
             if (string.IsNullOrWhiteSpace(storedHash))
                 return false;
 
-            var parts = storedHash.Split('.');
+            var parts =
+                storedHash.Split('.');
 
             if (parts.Length != 3)
                 return false;
 
-            if (!int.TryParse(parts[0], out int iterations))
+            if (!int.TryParse(
+                parts[0],
+                out int iterations))
+            {
                 return false;
+            }
 
             try
             {
@@ -215,17 +309,21 @@ namespace BillCollection.Controllers
                         HashAlgorithmName.SHA256);
 
                 byte[] actualHash =
-                    pbkdf2.GetBytes(expectedHash.Length);
+                    pbkdf2.GetBytes(
+                        expectedHash.Length);
 
-                return CryptographicOperations.FixedTimeEquals(
-                    actualHash,
-                    expectedHash);
+                return CryptographicOperations
+                    .FixedTimeEquals(
+                        actualHash,
+                        expectedHash);
             }
             catch
             {
                 return false;
             }
         }
+
+
         // =========================
         // LOGOUT
         // =========================
@@ -237,8 +335,10 @@ namespace BillCollection.Controllers
             await HttpContext.SignOutAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme);
 
-            return RedirectToAction(nameof(Login));
+            return RedirectToAction(
+                nameof(Login));
         }
+
 
         // =========================
         // ACCESS DENIED
