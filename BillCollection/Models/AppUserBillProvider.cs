@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace BillCollection.Models;
+﻿namespace BillCollection.Models;
 
 public partial class AppUserBillProvider
 {
@@ -17,6 +14,7 @@ public partial class AppUserBillProvider
 
     public string? CreatedBy { get; set; }
 
+    // Navigation Properties
     public virtual AppUser AppUser { get; set; } = null!;
 
     public virtual BillProvider Provider { get; set; } = null!;

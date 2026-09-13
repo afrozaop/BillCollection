@@ -1,21 +1,21 @@
-﻿using BillCollection.Models;
+﻿using BillCollection.Interfaces;
+using BillCollection.ViewModels;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using System.Security.Cryptography;
 
 namespace BillCollection.Controllers
 {
     public class AccountController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IAccountService _accountService;
 
-        public AccountController(ApplicationDbContext context)
+        public AccountController(
+            IAccountService accountService)
         {
-            _context = context;
+            _accountService = accountService;
         }
 
         // =========================
@@ -37,35 +37,26 @@ namespace BillCollection.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginViewModel model)
+        public async Task<IActionResult> Login(
+            LoginViewModel model)
         {
             if (!ModelState.IsValid)
+            {
                 return View(model);
+            }
 
             var username = model.Username.Trim();
 
-            // Find user
-            var user = await _context.AppUsers
-                .FirstOrDefaultAsync(x =>
-                    x.Username == username &&
-                    x.IsActive);
+            var user =
+                await _accountService.ValidateUserAsync(
+                    username,
+                    model.Password);
 
-            // DEBUG 1
             if (user == null)
             {
                 ModelState.AddModelError(
                     "",
-                    "DEBUG: USER NOT FOUND");
-
-                return View(model);
-            }
-
-            // DEBUG 2
-            if (!VerifyPassword(model.Password, user.PasswordHash))
-            {
-                ModelState.AddModelError(
-                    "",
-                    "DEBUG: PASSWORD VERIFY FAILED");
+                    "Invalid username or password.");
 
                 return View(model);
             }
@@ -93,32 +84,49 @@ namespace BillCollection.Controllers
                     user.Role)
             };
 
-            // BranchId Claim
+            // =========================
+            // BRANCH ID CLAIM
+            // =========================
+
             if (user.BranchId.HasValue)
             {
-                claims.Add(new Claim(
-                    "BranchId",
-                    user.BranchId.Value.ToString()));
+                claims.Add(
+                    new Claim(
+                        "BranchId",
+                        user.BranchId.Value.ToString()));
             }
 
-            var identity = new ClaimsIdentity(
-                claims,
-                CookieAuthenticationDefaults.AuthenticationScheme);
+            var identity =
+                new ClaimsIdentity(
+                    claims,
+                    CookieAuthenticationDefaults
+                        .AuthenticationScheme);
 
-            var principal = new ClaimsPrincipal(identity);
+            var principal =
+                new ClaimsPrincipal(identity);
 
             await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
+                CookieAuthenticationDefaults
+                    .AuthenticationScheme,
                 principal,
                 new AuthenticationProperties
                 {
-                    IsPersistent = model.RememberMe,
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
+                    IsPersistent =
+                        model.RememberMe,
+
+                    ExpiresUtc =
+                        DateTimeOffset.UtcNow
+                            .AddHours(8),
+
+                    AllowRefresh = true
                 });
 
-            user.LastLoginDate = DateTime.UtcNow;
+            // =========================
+            // UPDATE LAST LOGIN
+            // =========================
 
-            await _context.SaveChangesAsync();
+            await _accountService
+                .UpdateLastLoginAsync(user.Id);
 
             // =========================
             // REDIRECT BY ROLE
@@ -138,9 +146,10 @@ namespace BillCollection.Controllers
                     "Branch");
             }
 
-            // Invalid Role
+            // Invalid role
             await HttpContext.SignOutAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme);
+                CookieAuthenticationDefaults
+                    .AuthenticationScheme);
 
             ModelState.AddModelError(
                 "",
@@ -173,34 +182,31 @@ namespace BillCollection.Controllers
             ChangePasswordViewModel model)
         {
             if (!ModelState.IsValid)
+            {
                 return View(model);
-
-            // Get currently logged-in username
-            var username = User.Identity?.Name;
-
-            if (string.IsNullOrEmpty(username))
-            {
-                return RedirectToAction(nameof(Login));
             }
 
-            // Find current logged-in user
-            var user = await _context.AppUsers
-                .FirstOrDefaultAsync(x =>
-                    x.Username == username &&
-                    x.IsActive);
+            var username =
+                User.Identity?.Name;
 
-            if (user == null)
+            if (string.IsNullOrWhiteSpace(username))
             {
-                return RedirectToAction(nameof(Login));
+                await HttpContext.SignOutAsync(
+                    CookieAuthenticationDefaults
+                        .AuthenticationScheme);
+
+                return RedirectToAction(
+                    nameof(Login));
             }
 
-            // =========================
-            // VERIFY CURRENT PASSWORD
-            // =========================
+            var success =
+                await _accountService
+                    .ChangePasswordAsync(
+                        username,
+                        model.CurrentPassword,
+                        model.NewPassword);
 
-            if (!VerifyPassword(
-                model.CurrentPassword,
-                user.PasswordHash))
+            if (!success)
             {
                 ModelState.AddModelError(
                     "CurrentPassword",
@@ -209,118 +215,11 @@ namespace BillCollection.Controllers
                 return View(model);
             }
 
-            // =========================
-            // CREATE NEW PASSWORD HASH
-            // =========================
-
-            user.PasswordHash =
-                CreatePasswordHash(model.NewPassword);
-
-            // Save
-            await _context.SaveChangesAsync();
-
             TempData["SuccessMessage"] =
                 "Password changed successfully.";
 
             return RedirectToAction(
                 nameof(ChangePassword));
-        }
-
-
-        // =========================
-        // TEST PASSWORD
-        // =========================
-
-        [AllowAnonymous]
-        public IActionResult TestPassword()
-        {
-            string newHash =
-                CreatePasswordHash("Test@12345");
-
-            return Content(newHash);
-        }
-
-
-        // =========================
-        // CREATE PASSWORD HASH
-        // =========================
-
-        private static string CreatePasswordHash(
-            string password)
-        {
-            int iterations = 100000;
-
-            byte[] salt =
-                RandomNumberGenerator.GetBytes(16);
-
-            using var pbkdf2 =
-                new Rfc2898DeriveBytes(
-                    password,
-                    salt,
-                    iterations,
-                    HashAlgorithmName.SHA256);
-
-            byte[] hash =
-                pbkdf2.GetBytes(32);
-
-            return $"{iterations}." +
-                   $"{Convert.ToBase64String(salt)}." +
-                   $"{Convert.ToBase64String(hash)}";
-        }
-
-
-        // =========================
-        // VERIFY PASSWORD
-        // =========================
-
-        private static bool VerifyPassword(
-            string password,
-            string storedHash)
-        {
-            if (string.IsNullOrWhiteSpace(storedHash))
-                return false;
-
-            var parts =
-                storedHash.Split('.');
-
-            if (parts.Length != 3)
-                return false;
-
-            if (!int.TryParse(
-                parts[0],
-                out int iterations))
-            {
-                return false;
-            }
-
-            try
-            {
-                byte[] salt =
-                    Convert.FromBase64String(parts[1]);
-
-                byte[] expectedHash =
-                    Convert.FromBase64String(parts[2]);
-
-                using var pbkdf2 =
-                    new Rfc2898DeriveBytes(
-                        password,
-                        salt,
-                        iterations,
-                        HashAlgorithmName.SHA256);
-
-                byte[] actualHash =
-                    pbkdf2.GetBytes(
-                        expectedHash.Length);
-
-                return CryptographicOperations
-                    .FixedTimeEquals(
-                        actualHash,
-                        expectedHash);
-            }
-            catch
-            {
-                return false;
-            }
         }
 
 
@@ -333,7 +232,8 @@ namespace BillCollection.Controllers
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme);
+                CookieAuthenticationDefaults
+                    .AuthenticationScheme);
 
             return RedirectToAction(
                 nameof(Login));

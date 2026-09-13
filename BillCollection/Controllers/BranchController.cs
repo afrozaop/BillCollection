@@ -1,52 +1,51 @@
-﻿using BillCollection.Models;
+﻿using BillCollection.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace BillCollection.Controllers
 {
     [Authorize(Roles = "Branch")]
     public class BranchController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IBranchService _branchService;
 
-        public BranchController(ApplicationDbContext context)
+        public BranchController(
+            IBranchService branchService)
         {
-            _context = context;
+            _branchService = branchService;
         }
 
-        // GET: Branch/Index
+        // =========================================================
+        // BRANCH DASHBOARD
+        // =========================================================
+
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            // Get logged-in user's BranchId
-            var branchIdValue = User.FindFirst("BranchId")?.Value;
+            var branchIdValue =
+                User.FindFirst("BranchId")?.Value;
 
-            if (!int.TryParse(branchIdValue, out int branchId))
+            if (!int.TryParse(
+                    branchIdValue,
+                    out int branchId))
             {
                 return Forbid();
             }
 
-            // Get current branch
-            var branch = await _context.Branches
-                .FirstOrDefaultAsync(x =>
-                    x.Id == branchId &&
-                    x.IsActive);
+            var branch =
+                await _branchService
+                    .GetBranchAsync(branchId);
 
             if (branch == null)
             {
-                return NotFound("Branch not found.");
+                return NotFound(
+                    "Branch not found.");
             }
 
-            // Get providers assigned to this branch
-            var providers = await _context.BranchBillProviders
-                .Include(x => x.Provider)
-                .Where(x =>
-                    x.BranchId == branchId &&
-                    x.IsActive &&
-                    x.Provider.IsActive)
-                .OrderBy(x => x.Provider.ProviderName)
-                .ToListAsync();
+            var providers =
+                await _branchService
+                    .GetAssignedProvidersAsync(
+                        branchId);
 
             ViewBag.Branch = branch;
 

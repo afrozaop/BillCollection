@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace BillCollection.Models;
+﻿namespace BillCollection.Models;
 
 public partial class AppUser
 {
@@ -41,5 +38,6 @@ public partial class AppUser
 
     public DateTime? LastLoginDate { get; set; }
 
+    // Navigation Property
     public virtual Branch? Branch { get; set; }
 }

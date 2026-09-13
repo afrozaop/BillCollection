@@ -1,39 +1,42 @@
-﻿using BillCollection.Models;
+﻿using BillCollection.Interfaces;
+using BillCollection.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Cryptography;
 
 namespace BillCollection.Controllers
 {
     [Authorize(Roles = "HeadOffice")]
     public class AdminController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IAdminService _adminService;
+        private readonly IAccountService _accountService;
 
-        public AdminController(ApplicationDbContext context)
+        public AdminController(
+            IAdminService adminService,
+            IAccountService accountService)
         {
-            _context = context;
+            _adminService = adminService;
+            _accountService = accountService;
         }
-
 
         // =========================================================
         // ADMIN DASHBOARD
         // =========================================================
 
+        [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var branchCount = await _context.Branches
-                .CountAsync();
+            var branchCount =
+                await _adminService.GetBranchCountAsync();
 
-            var userCount = await _context.AppUsers
-                .CountAsync();
+            var userCount =
+                await _adminService.GetUserCountAsync();
 
-            var providerCount = await _context.BillProviders
-                .CountAsync();
+            var providerCount =
+                await _adminService.GetProviderCountAsync();
 
-            var assignmentCount = await _context.BranchBillProviders
-                .CountAsync();
+            var assignmentCount =
+                await _adminService.GetAssignmentCountAsync();
 
             ViewBag.BranchCount = branchCount;
             ViewBag.UserCount = userCount;
@@ -43,45 +46,46 @@ namespace BillCollection.Controllers
             return View();
         }
 
+        // =========================================================
+        // USERS LIST
+        // =========================================================
 
-        // USERS LIST //
-        [HttpGet] public async Task<IActionResult> Users() 
+        [HttpGet]
+        public async Task<IActionResult> Users()
         {
-            var users = await _context.AppUsers .AsNoTracking() .OrderBy(x => x.Username) .ToListAsync(); 
-            return View(users); 
-        }
+            var users =
+                await _adminService.GetUsersAsync();
 
+            return View(users);
+        }
 
         // =========================================================
         // BILL PROVIDERS
         // =========================================================
 
-        // GET: /Admin/BillProviders
         [HttpGet]
         public async Task<IActionResult> BillProviders()
         {
-            var providers = await _context.BillProviders
-                .AsNoTracking()
-                .OrderBy(x => x.ProviderName)
-                .ToListAsync();
+            var providers =
+                await _adminService.GetBillProvidersAsync();
 
             return View(providers);
         }
 
-
         // =========================================================
-        // CREATE BILL PROVIDER
+        // CREATE BILL PROVIDER - GET
         // =========================================================
 
-        // GET: /Admin/CreateBillProvider
         [HttpGet]
         public IActionResult CreateBillProvider()
         {
             return View();
         }
 
+        // =========================================================
+        // CREATE BILL PROVIDER - POST
+        // =========================================================
 
-        // POST: /Admin/CreateBillProvider
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateBillProvider(
@@ -92,12 +96,18 @@ namespace BillCollection.Controllers
                 return View(provider);
             }
 
-            provider.CreatedDate = DateTime.UtcNow;
-            provider.IsActive = true;
+            var success =
+                await _adminService
+                    .CreateBillProviderAsync(provider);
 
-            _context.BillProviders.Add(provider);
+            if (!success)
+            {
+                ModelState.AddModelError(
+                    "",
+                    "Unable to create bill provider.");
 
-            await _context.SaveChangesAsync();
+                return View(provider);
+            }
 
             TempData["Success"] =
                 "Bill Provider created successfully.";
@@ -106,17 +116,17 @@ namespace BillCollection.Controllers
                 nameof(BillProviders));
         }
 
-
         // =========================================================
-        // EDIT BILL PROVIDER
+        // EDIT BILL PROVIDER - GET
         // =========================================================
 
-        // GET: /Admin/EditBillProvider/5
         [HttpGet]
-        public async Task<IActionResult> EditBillProvider(int id)
+        public async Task<IActionResult> EditBillProvider(
+            int id)
         {
-            var provider = await _context.BillProviders
-                .FindAsync(id);
+            var provider =
+                await _adminService
+                    .GetBillProviderAsync(id);
 
             if (provider == null)
             {
@@ -126,8 +136,10 @@ namespace BillCollection.Controllers
             return View(provider);
         }
 
+        // =========================================================
+        // EDIT BILL PROVIDER - POST
+        // =========================================================
 
-        // POST: /Admin/EditBillProvider/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditBillProvider(
@@ -144,24 +156,16 @@ namespace BillCollection.Controllers
                 return View(provider);
             }
 
-            var existing = await _context.BillProviders
-                .FindAsync(id);
+            var success =
+                await _adminService
+                    .UpdateBillProviderAsync(
+                        id,
+                        provider);
 
-            if (existing == null)
+            if (!success)
             {
                 return NotFound();
             }
-
-            existing.ProviderCode =
-                provider.ProviderCode;
-
-            existing.ProviderName =
-                provider.ProviderName;
-
-            existing.IsActive =
-                provider.IsActive;
-
-            await _context.SaveChangesAsync();
 
             TempData["Success"] =
                 "Bill Provider updated successfully.";
@@ -170,28 +174,23 @@ namespace BillCollection.Controllers
                 nameof(BillProviders));
         }
 
-
         // =========================================================
         // DELETE / DEACTIVATE BILL PROVIDER
         // =========================================================
 
-        // POST: /Admin/DeleteBillProvider/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteBillProvider(int id)
+        public async Task<IActionResult>
+            DeleteBillProvider(int id)
         {
-            var provider = await _context.BillProviders
-                .FindAsync(id);
+            var success =
+                await _adminService
+                    .DeactivateBillProviderAsync(id);
 
-            if (provider == null)
+            if (!success)
             {
                 return NotFound();
             }
-
-            // Soft delete
-            provider.IsActive = false;
-
-            await _context.SaveChangesAsync();
 
             TempData["Success"] =
                 "Bill Provider deactivated successfully.";
@@ -200,46 +199,21 @@ namespace BillCollection.Controllers
                 nameof(BillProviders));
         }
 
-
         // =========================================================
-        // BRANCH PROVIDER ACCESS
-        // =========================================================
-
-        // GET:
-        // /Admin/BranchProviderAccess
-        //
-        // /Admin/BranchProviderAccess?branchId=1
+        // BRANCH PROVIDER ACCESS - GET
         // =========================================================
 
         [HttpGet]
-        public async Task<IActionResult> BranchProviderAccess(
-            int? branchId)
+        public async Task<IActionResult>
+            BranchProviderAccess(int? branchId)
         {
-            // -----------------------------------------------------
-            // ACTIVE BRANCHES
-            // -----------------------------------------------------
+            var branches =
+                await _adminService
+                    .GetActiveBranchesAsync();
 
-            var branches = await _context.Branches
-                .AsNoTracking()
-                .Where(x => x.IsActive)
-                .OrderBy(x => x.BranchCode)
-                .ToListAsync();
-
-
-            // -----------------------------------------------------
-            // ACTIVE BILL PROVIDERS
-            // -----------------------------------------------------
-
-            var providers = await _context.BillProviders
-                .AsNoTracking()
-                .Where(x => x.IsActive)
-                .OrderBy(x => x.ProviderName)
-                .ToListAsync();
-
-
-            // -----------------------------------------------------
-            // SELECTED PROVIDER IDS
-            // -----------------------------------------------------
+            var providers =
+                await _adminService
+                    .GetActiveProvidersAsync();
 
             var selectedProviderIds =
                 new List<int>();
@@ -247,26 +221,14 @@ namespace BillCollection.Controllers
             if (branchId.HasValue)
             {
                 selectedProviderIds =
-                    await _context.BranchBillProviders
-                        .AsNoTracking()
-                        .Where(x =>
-                            x.BranchId == branchId.Value &&
-                            x.IsActive)
-                        .Select(x => x.ProviderId)
-                        .Distinct()
-                        .ToListAsync();
+                    await _adminService
+                        .GetSelectedProviderIdsAsync(
+                            branchId.Value);
             }
 
+            ViewBag.Branches = branches;
 
-            // -----------------------------------------------------
-            // SEND DATA TO VIEW
-            // -----------------------------------------------------
-
-            ViewBag.Branches =
-                branches;
-
-            ViewBag.Providers =
-                providers;
+            ViewBag.Providers = providers;
 
             ViewBag.SelectedProviderIds =
                 selectedProviderIds;
@@ -277,31 +239,28 @@ namespace BillCollection.Controllers
             return View();
         }
 
-
         // =========================================================
-        // SAVE BRANCH PROVIDER ACCESS
-        // =========================================================
-
-        // POST:
-        // /Admin/BranchProviderAccess
+        // BRANCH PROVIDER ACCESS - POST
         // =========================================================
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> BranchProviderAccess(
-            int branchId,
-            int[] providerIds)
+        public async Task<IActionResult>
+            BranchProviderAccess(
+                int branchId,
+                int[] providerIds)
         {
-            // -----------------------------------------------------
-            // CHECK BRANCH
-            // -----------------------------------------------------
+            var createdBy =
+                User.Identity?.Name;
 
-            var branch = await _context.Branches
-                .FirstOrDefaultAsync(x =>
-                    x.Id == branchId &&
-                    x.IsActive);
+            var success =
+                await _adminService
+                    .SaveBranchProviderAccessAsync(
+                        branchId,
+                        providerIds,
+                        createdBy);
 
-            if (branch == null)
+            if (!success)
             {
                 TempData["Error"] =
                     "Branch not found.";
@@ -310,98 +269,23 @@ namespace BillCollection.Controllers
                     nameof(BranchProviderAccess));
             }
 
-
-            // -----------------------------------------------------
-            // SELECTED PROVIDER IDS
-            // -----------------------------------------------------
-
-            var selectedIds = providerIds?
-                .Distinct()
-                .ToList()
-                ?? new List<int>();
-
-
-            // -----------------------------------------------------
-            // EXISTING ASSIGNMENTS
-            // -----------------------------------------------------
-
-            var existing =
-                await _context.BranchBillProviders
-                    .Where(x =>
-                        x.BranchId == branchId)
-                    .ToListAsync();
-
-
-            // -----------------------------------------------------
-            // REMOVE OLD ASSIGNMENTS
-            // -----------------------------------------------------
-
-            if (existing.Any())
-            {
-                _context.BranchBillProviders
-                    .RemoveRange(existing);
-            }
-
-
-            // -----------------------------------------------------
-            // ADD NEW ASSIGNMENTS
-            // -----------------------------------------------------
-
-            if (selectedIds.Any())
-            {
-                var validProviderIds =
-                    await _context.BillProviders
-                        .Where(x =>
-                            x.IsActive &&
-                            selectedIds.Contains(x.Id))
-                        .Select(x => x.Id)
-                        .Distinct()
-                        .ToListAsync();
-
-                foreach (var providerId in validProviderIds)
-                {
-                    _context.BranchBillProviders.Add(
-                        new BranchBillProvider
-                        {
-                            BranchId = branchId,
-                            ProviderId = providerId,
-                            IsActive = true,
-                            CreatedDate = DateTime.UtcNow,
-                            CreatedBy = User.Identity?.Name
-                        });
-                }
-            }
-
-
-            // -----------------------------------------------------
-            // SAVE
-            // -----------------------------------------------------
-
-            await _context.SaveChangesAsync();
-
-
             TempData["Success"] =
                 "Branch provider access updated successfully.";
-
 
             return RedirectToAction(
                 nameof(BranchProviderAccess));
         }
 
-
         // =========================================================
-        // RESET BRANCH USER PASSWORD
-        // =========================================================
-
-        // GET: /Admin/ResetPassword/1050
+        // RESET PASSWORD - GET
         // =========================================================
 
         [HttpGet]
-        public async Task<IActionResult> ResetPassword(int id)
+        public async Task<IActionResult>
+            ResetPassword(long id)
         {
-            var user = await _context.AppUsers
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == id);
+            var user =
+                await _adminService.GetUserAsync(id);
 
             if (user == null)
             {
@@ -411,96 +295,42 @@ namespace BillCollection.Controllers
             return View(user);
         }
 
-
         // =========================================================
-        // CONFIRM RESET PASSWORD
-        // =========================================================
-
-        // POST: /Admin/ResetPasswordConfirm/1050
+        // RESET PASSWORD - POST
         // =========================================================
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ResetPasswordConfirm(int id)
+        public async Task<IActionResult>
+            ResetPasswordConfirm(long id)
         {
-            var user = await _context.AppUsers
-                .FirstOrDefaultAsync(x => x.Id == id);
+            var user =
+                await _adminService.GetUserAsync(id);
 
             if (user == null)
             {
                 return NotFound();
             }
 
-            // =====================================================
-            // DEFAULT RESET PASSWORD
-            // =====================================================
+            var success =
+                await _accountService
+                    .ResetPasswordAsync(id);
 
-            const string defaultPassword = "Test@12345";
+            if (!success)
+            {
+                TempData["Error"] =
+                    "Password reset failed.";
 
-
-            // =====================================================
-            // CREATE NEW PBKDF2 HASH
-            // =====================================================
-
-            user.PasswordHash =
-                CreatePasswordHash(defaultPassword);
-
-
-            // =====================================================
-            // SAVE TO DATABASE
-            // =====================================================
-
-            await _context.SaveChangesAsync();
-
-
-            // =====================================================
-            // SUCCESS MESSAGE
-            // =====================================================
+                return RedirectToAction(
+                    nameof(Users));
+            }
 
             TempData["Success"] =
-                $"Password for {user.Username} has been reset successfully.";
+                $"Password for {user.Username} " +
+                "has been reset successfully.";
 
-
-            // =====================================================
-            // GO BACK TO USERS PAGE
-            // =====================================================
-
-            return RedirectToAction("Users");
-        }
-
-
-        // =========================================================
-        // CREATE PBKDF2 PASSWORD HASH
-        // =========================================================
-
-        private string CreatePasswordHash(string password)
-        {
-            const int iterations = 100000;
-
-            using var rng =
-                RandomNumberGenerator.Create();
-
-            byte[] salt = new byte[16];
-
-            rng.GetBytes(salt);
-
-
-            using var pbkdf2 =
-                new Rfc2898DeriveBytes(
-                    password,
-                    salt,
-                    iterations,
-                    HashAlgorithmName.SHA256);
-
-
-            byte[] hash =
-                pbkdf2.GetBytes(32);
-
-
-            return
-                $"{iterations}." +
-                $"{Convert.ToBase64String(salt)}." +
-                $"{Convert.ToBase64String(hash)}";
+            return RedirectToAction(
+                nameof(Users));
         }
     }
 }

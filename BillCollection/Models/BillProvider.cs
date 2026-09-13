@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace BillCollection.Models;
+﻿namespace BillCollection.Models;
 
 public partial class BillProvider
 {
@@ -15,5 +12,9 @@ public partial class BillProvider
 
     public DateTime CreatedDate { get; set; }
 
-    public virtual ICollection<BranchBillProvider> BranchBillProviders { get; set; } = new List<BranchBillProvider>();
+    // Navigation Property
+    public virtual ICollection<BranchBillProvider>
+        BranchBillProviders
+    { get; set; }
+        = new List<BranchBillProvider>();
 }
