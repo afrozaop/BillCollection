@@ -40,4 +40,7 @@ public partial class AppUser
 
     // Navigation Property
     public virtual Branch? Branch { get; set; }
+
+    public string? BranchCode { get; set; }
+    
 }
