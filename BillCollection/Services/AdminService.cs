@@ -1,5 +1,6 @@
 ﻿using BillCollection.Interfaces;
 using BillCollection.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace BillCollection.Services
@@ -7,12 +8,46 @@ namespace BillCollection.Services
     public class AdminService : IAdminService
     {
         private readonly ApplicationDbContext _context;
+        private readonly PasswordHasher<AppUser> _passwordHasher;
 
-        public AdminService(
-            ApplicationDbContext context)
+        public AdminService(ApplicationDbContext context)
         {
             _context = context;
+            _passwordHasher = new PasswordHasher<AppUser>();
         }
+
+        // =========================================================
+        // CREATE USER
+        // =========================================================
+
+        public async Task<bool> UsernameExistsAsync(string username)
+        {
+            username = username.Trim();
+
+            return await _context.AppUsers
+                .AnyAsync(x => x.Username == username);
+        }
+
+        public async Task CreateUserAsync(
+            AppUser user,
+            string password,
+            string createdBy)
+        {
+            user.Username = user.Username.Trim();
+
+            user.PasswordHash =
+                _passwordHasher.HashPassword(
+                    user,
+                    password);
+
+            user.CreatedDate = DateTime.Now;
+            user.CreatedBy = createdBy;
+
+            _context.AppUsers.Add(user);
+
+            await _context.SaveChangesAsync();
+        }
+
 
         // =========================================================
         // DASHBOARD
@@ -45,6 +80,63 @@ namespace BillCollection.Services
 
         // =========================================================
         // USERS
+        // SEARCH + PAGINATION
+        // =========================================================
+
+        public async Task<(List<AppUser> Users, int TotalRecords)>
+            GetUsersAsync(
+                string? search,
+                int page,
+                int pageSize)
+        {
+            // Safety
+            if (page < 1)
+                page = 1;
+
+            if (pageSize <= 0)
+                pageSize = 25;
+
+            if (pageSize > 100)
+                pageSize = 100;
+
+
+            IQueryable<AppUser> query =
+                _context.AppUsers
+                    .AsNoTracking();
+
+
+            // Search
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+
+                query = query.Where(x =>
+                    x.Username.Contains(search) ||
+                    x.DisplayName.Contains(search) ||
+                    x.Role.Contains(search));
+            }
+
+
+            // Total records BEFORE pagination
+            int totalRecords =
+                await query.CountAsync();
+
+
+            // Pagination
+            List<AppUser> users =
+                await query
+                    .OrderBy(x => x.Username)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+
+            return (users, totalRecords);
+        }
+
+
+        // =========================================================
+        // GET ALL USERS
         // =========================================================
 
         public async Task<List<AppUser>> GetUsersAsync()
@@ -54,12 +146,19 @@ namespace BillCollection.Services
                 .OrderBy(x => x.Username)
                 .ToListAsync();
         }
+
+
+        // =========================================================
+        // GET SINGLE USER
+        // =========================================================
+
         public async Task<AppUser?> GetUserAsync(long id)
         {
             return await _context.AppUsers
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
+
 
         // =========================================================
         // BILL PROVIDERS
@@ -91,8 +190,9 @@ namespace BillCollection.Services
         // CREATE BILL PROVIDER
         // =========================================================
 
-        public async Task<bool> CreateBillProviderAsync(
-            BillProvider provider)
+        public async Task<bool>
+            CreateBillProviderAsync(
+                BillProvider provider)
         {
             provider.CreatedDate =
                 DateTime.UtcNow;
@@ -111,9 +211,10 @@ namespace BillCollection.Services
         // UPDATE BILL PROVIDER
         // =========================================================
 
-        public async Task<bool> UpdateBillProviderAsync(
-            int id,
-            BillProvider provider)
+        public async Task<bool>
+            UpdateBillProviderAsync(
+                int id,
+                BillProvider provider)
         {
             var existing =
                 await _context.BillProviders
@@ -121,6 +222,7 @@ namespace BillCollection.Services
 
             if (existing == null)
                 return false;
+
 
             existing.ProviderCode =
                 provider.ProviderCode;
@@ -130,6 +232,7 @@ namespace BillCollection.Services
 
             existing.IsActive =
                 provider.IsActive;
+
 
             await _context.SaveChangesAsync();
 
@@ -141,21 +244,43 @@ namespace BillCollection.Services
         // DEACTIVATE BILL PROVIDER
         // =========================================================
 
-        public async Task<bool>
+        public async Task
             DeactivateBillProviderAsync(int id)
         {
             var provider =
                 await _context.BillProviders
-                    .FindAsync(id);
+                    .FirstOrDefaultAsync(
+                        x => x.Id == id);
 
             if (provider == null)
-                return false;
+                return;
+
 
             provider.IsActive = false;
 
             await _context.SaveChangesAsync();
+        }
 
-            return true;
+
+        // =========================================================
+        // ACTIVATE BILL PROVIDER
+        // =========================================================
+
+        public async Task
+            ActivateBillProviderAsync(int id)
+        {
+            var provider =
+                await _context.BillProviders
+                    .FirstOrDefaultAsync(
+                        x => x.Id == id);
+
+            if (provider == null)
+                return;
+
+
+            provider.IsActive = true;
+
+            await _context.SaveChangesAsync();
         }
 
 
@@ -281,6 +406,7 @@ namespace BillCollection.Services
                         .Distinct()
                         .ToListAsync();
 
+
                 foreach (var providerId
                          in validProviderIds)
                 {
@@ -288,10 +414,14 @@ namespace BillCollection.Services
                         new BranchBillProvider
                         {
                             BranchId = branchId,
+
                             ProviderId = providerId,
+
                             IsActive = true,
+
                             CreatedDate =
                                 DateTime.UtcNow,
+
                             CreatedBy = createdBy
                         });
                 }
@@ -305,6 +435,57 @@ namespace BillCollection.Services
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+
+        // =========================================================
+        // DELETE BILL PROVIDER
+        // =========================================================
+        // NOTE:
+        // Hard delete can cause FK error if provider is assigned
+        // to BranchBillProviders.
+        // =========================================================
+
+        public async Task
+            DeleteBillProviderAsync(int id)
+        {
+            var provider =
+                await _context.BillProviders
+                    .FirstOrDefaultAsync(
+                        p => p.Id == id);
+
+            if (provider == null)
+                return;
+
+
+            _context.BillProviders
+                .Remove(provider);
+
+            await _context.SaveChangesAsync();
+        }
+        // =========================================================
+        // RESET USER PASSWORD
+        // =========================================================
+
+        public async Task ResetUserPasswordAsync(
+            long id,
+            string newPassword)
+        {
+            var user = await _context.AppUsers
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (user == null)
+            {
+                throw new KeyNotFoundException(
+                    "User not found.");
+            }
+
+            user.PasswordHash =
+                _passwordHasher.HashPassword(
+                    user,
+                    newPassword);
+
+            await _context.SaveChangesAsync();
         }
     }
 }

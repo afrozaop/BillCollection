@@ -1,6 +1,7 @@
-using BillCollection.Interfaces;
+﻿using BillCollection.Interfaces;
 using BillCollection.Models;
 using BillCollection.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
@@ -46,8 +47,11 @@ builder.Services.AddAuthentication(
     CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/Account/Login";
+        // Login page
+        options.LoginPath =
+            "/Account/Login";
 
+        // Access denied page
         options.AccessDeniedPath =
             "/Account/AccessDenied";
 
@@ -65,11 +69,32 @@ builder.Services.AddAuthentication(
 
         options.Cookie.IsEssential = true;
 
-        // Login session = 8 hours
+        // Login session
         options.ExpireTimeSpan =
             TimeSpan.FromHours(8);
 
         options.SlidingExpiration = true;
+
+        // =====================================================
+        // VALIDATE COOKIE
+        // =====================================================
+
+        options.Events =
+            new CookieAuthenticationEvents
+            {
+                OnValidatePrincipal =
+                    async context =>
+                    {
+                        // Development environment এ
+                        // application restart হলে নতুন
+                        // application instance তৈরি হবে।
+                        //
+                        // এখানে এখন কোনো extra validation
+                        // করা হচ্ছে না।
+
+                        await Task.CompletedTask;
+                    }
+            };
     });
 
 // =========================================================

@@ -4,14 +4,41 @@ namespace BillCollection.Interfaces
 {
     public interface IAdminService
     {
+        // =========================================================
+        // DASHBOARD
+        // =========================================================
+
         Task<int> GetBranchCountAsync();
+
         Task<int> GetUserCountAsync();
+
         Task<int> GetProviderCountAsync();
+
         Task<int> GetAssignmentCountAsync();
 
-        Task<List<AppUser>> GetUsersAsync();
+
+        // =========================================================
+        // USERS
+        // =========================================================
+
+        Task<(List<AppUser> Users, int TotalRecords)> GetUsersAsync(
+            string? search,
+            int page,
+            int pageSize);
 
         Task<AppUser?> GetUserAsync(long id);
+
+        Task<bool> UsernameExistsAsync(string username);
+
+        Task CreateUserAsync(
+            AppUser user,
+            string password,
+            string createdBy);
+
+
+        // =========================================================
+        // BILL PROVIDERS
+        // =========================================================
 
         Task<List<BillProvider>> GetBillProvidersAsync();
 
@@ -24,12 +51,30 @@ namespace BillCollection.Interfaces
             int id,
             BillProvider provider);
 
-        Task<bool> DeactivateBillProviderAsync(
-            int id);
+        Task DeleteBillProviderAsync(int id);
+
+        Task DeactivateBillProviderAsync(int id);
+
+        Task ActivateBillProviderAsync(int id);
+
+
+        // =========================================================
+        // BRANCHES
+        // =========================================================
 
         Task<List<Branch>> GetActiveBranchesAsync();
 
+
+        // =========================================================
+        // ACTIVE BILL PROVIDERS
+        // =========================================================
+
         Task<List<BillProvider>> GetActiveProvidersAsync();
+
+
+        // =========================================================
+        // BRANCH PROVIDER ACCESS
+        // =========================================================
 
         Task<List<int>> GetSelectedProviderIdsAsync(
             int branchId);
@@ -38,5 +83,6 @@ namespace BillCollection.Interfaces
             int branchId,
             int[] providerIds,
             string? createdBy);
+        Task ResetUserPasswordAsync(long id, string newPassword);
     }
 }

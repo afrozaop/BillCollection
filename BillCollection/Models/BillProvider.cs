@@ -17,4 +17,5 @@ public partial class BillProvider
         BranchBillProviders
     { get; set; }
         = new List<BranchBillProvider>();
+
 }

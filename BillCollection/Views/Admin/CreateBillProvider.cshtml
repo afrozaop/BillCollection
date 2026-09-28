@@ -1,0 +1,110 @@
+﻿@model BillCollection.Models.BillProvider
+
+@{
+    ViewData["Title"] = "Add Bill Provider";
+}
+
+<div class="container-fluid mt-4">
+
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+
+            <div class="card shadow-sm">
+
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        Add Bill Provider
+                    </h4>
+                </div>
+
+                <div class="card-body">
+
+                    <form asp-controller="Admin"
+                          asp-action="CreateBillProvider"
+                          method="post">
+
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="ModelOnly"
+                             class="alert alert-danger">
+                        </div>
+
+
+                        <!-- Provider Code -->
+
+                        <div class="mb-3">
+
+                            <label asp-for="ProviderCode"
+                                   class="form-label">
+                                Provider Code
+                            </label>
+
+                            <input asp-for="ProviderCode"
+                                   class="form-control"
+                                   placeholder="Example: NESCO"
+                                   autocomplete="off" />
+
+                            <span asp-validation-for="ProviderCode"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+
+                        <!-- Provider Name -->
+
+                        <div class="mb-3">
+
+                            <label asp-for="ProviderName"
+                                   class="form-label">
+                                Provider Name
+                            </label>
+
+                            <input asp-for="ProviderName"
+                                   class="form-control"
+                                   placeholder="Example: NESCO"
+                                   autocomplete="off" />
+
+                            <span asp-validation-for="ProviderName"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+
+                        <!-- Buttons -->
+
+                        <div class="d-flex justify-content-between mt-4">
+
+                            <a asp-controller="Admin"
+                               asp-action="BillProviders"
+                               class="btn btn-secondary">
+                                Cancel
+                            </a>
+
+                            <button type="submit"
+                                    class="btn btn-primary">
+                                Add Bill Provider
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+
+    @{
+        await Html.RenderPartialAsync(
+            "_ValidationScriptsPartial");
+    }
+
+}
