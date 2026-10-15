@@ -4,6 +4,8 @@ using BillCollection.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using BillCollection.Models.BREB;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +40,10 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IBranchService,
     BranchService>();
+builder.Services.Configure<BREBOptions>(
+    builder.Configuration.GetSection("BREB"));
+
+builder.Services.AddHttpClient<IBREBService, BREBService>();
 
 // =========================================================
 // AUTHENTICATION

@@ -1,0 +1,69 @@
+﻿@{
+    ViewData["Title"] = "BREB";
+}
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">BREB Services</h2>
+
+    <div class="row g-3">
+
+        <div class="col-md-4">
+            <a asp-controller="BREB"
+               asp-action="BillCollection"
+               class="btn btn-primary w-100 p-3">
+                Bill Collection
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a asp-controller="BREB"
+               asp-action="CollectionList"
+               class="btn btn-outline-primary w-100 p-3">
+                Collection List
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a asp-controller="BREB"
+               asp-action="UnsuccessfulList"
+               class="btn btn-outline-danger w-100 p-3">
+                Unsuccessful Payment
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a asp-controller="BREB"
+               asp-action="DisputeList"
+               class="btn btn-outline-warning w-100 p-3">
+                Dispute Payment
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a asp-controller="BREB"
+               asp-action="ReconcileReport"
+               class="btn btn-outline-secondary w-100 p-3">
+                Reconcile Report
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a asp-controller="BREB"
+               asp-action="SummaryReport"
+               class="btn btn-outline-success w-100 p-3">
+                Summary Report
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a asp-controller="BREB"
+               asp-action="CollectionReport"
+               class="btn btn-outline-info w-100 p-3">
+                Collection Report
+            </a>
+        </div>
+
+    </div>
+
+</div>

@@ -1,0 +1,62 @@
+﻿
+@model List<BillCollection.Models.BREB.BREBTransaction>
+
+@{
+    ViewData["Title"] = "BREB Dispute Payments";
+}
+
+<div class="container mt-4">
+    <h2>BREB Dispute Payments</h2>
+    <hr />
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Transaction ID</th>
+                        <th>SMS Account No</th>
+                        <th>Reference No</th>
+                        <th>Bill Month</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.Id</td>
+                            <td>@item.SMSAccountNo</td>
+                            <td>@item.RefNo</td>
+                            <td>@item.BillMonth</td>
+                            <td>@item.Amount.ToString("N2")</td>
+                            <td>
+                                <span class="badge bg-danger">
+                                    @item.TxnStatus
+                                </span>
+                            </td>
+                            <td>
+                                @item.CreatedOn.ToString("dd-MMM-yyyy hh:mm tt")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            No dispute payments found.
+        </div>
+    }
+
+    <a asp-controller="BREB"
+       asp-action="Index"
+       class="btn btn-secondary">
+        Back to BREB
+    </a>
+</div>

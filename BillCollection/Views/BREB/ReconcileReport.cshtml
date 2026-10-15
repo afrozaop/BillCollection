@@ -1,0 +1,89 @@
+﻿
+@model BillCollection.ViewModels.BREB.BREBReconcileReportViewModel
+
+@{
+    ViewData["Title"] = "BREB Reconcile Report";
+}
+
+<div class="container mt-4">
+    <h2>BREB Reconcile Report</h2>
+    <p class="text-muted">
+        Test report based on transactions saved in the local database.
+    </p>
+    <hr />
+
+    <hr class="my-4" />
+
+    <h4>Transaction Details</h4>
+
+    @if (Model.Transactions != null && Model.Transactions.Any())
+    {
+        <div class="table-responsive mt-3">
+            <table class="table table-bordered table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Transaction ID</th>
+                        <th>SMS Account No</th>
+                        <th>Reference No</th>
+                        <th>Bill Month</th>
+                        <th>Due Type</th>
+                        <th>Amount</th>
+                        <th>VAT</th>
+                        <th>Status</th>
+                        <th>Transaction Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Transactions)
+                    {
+                        <tr>
+                            <td>@item.Id</td>
+                            <td>@item.SMSAccountNo</td>
+                            <td>@item.RefNo</td>
+                            <td>@item.BillMonth</td>
+                            <td>@item.DueType</td>
+                            <td>@item.Amount.ToString("N2")</td>
+                            <td>@item.Vat.ToString("N2")</td>
+                            <td>
+                                @if (item.TxnStatus == "Success")
+                                {
+                                    <span class="badge bg-success">
+                                        @item.TxnStatus
+                                    </span>
+                                }
+                                else if (item.TxnStatus == "Failed")
+                                {
+                                    <span class="badge bg-danger">
+                                        @item.TxnStatus
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark">
+                                        @item.TxnStatus
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                @item.CreatedOn.ToString("dd-MMM-yyyy hh:mm tt")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info mt-3">
+            No transaction details found.
+        </div>
+    }
+   
+
+    <a asp-controller="BREB"
+       asp-action="Index"
+       class="btn btn-secondary mt-4">
+        Back to BREB
+    </a>
+</div>

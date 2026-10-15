@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 namespace BillCollection.Models;
+using BillCollection.Models.BREB;
 
 public partial class ApplicationDbContext : DbContext
 {
@@ -9,7 +10,7 @@ public partial class ApplicationDbContext : DbContext
         : base(options)
     {
     }
-
+    public virtual DbSet<BREBTransaction> BREBTransactions { get; set; }
     public virtual DbSet<AppUser> AppUsers { get; set; }
 
     public virtual DbSet<BillProvider> BillProviders { get; set; }

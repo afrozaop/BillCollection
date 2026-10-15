@@ -1,0 +1,67 @@
+﻿@model List<BillCollection.Models.BREB.BREBTransaction>
+
+@{
+    ViewData["Title"] = "BREB Collection List";
+}
+
+<div class="container mt-4">
+
+    <h2>BREB Collection List</h2>
+
+    <hr />
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Transaction ID</th>
+                    <th>SMS Account No</th>
+                    <th>Reference No</th>
+                    <th>Bill Month</th>
+                    <th>Amount</th>
+                    <th>VAT</th>
+                    <th>Status</th>
+                    <th>Collection Date</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.Id</td>
+                            <td>@item.SMSAccountNo</td>
+                            <td>@item.RefNo</td>
+                            <td>@item.BillMonth</td>
+                            <td>@item.Amount.ToString("N2")</td>
+                            <td>@item.Vat.ToString("N2")</td>
+                            <td>
+                                <span class="badge bg-success">
+                                    @item.TxnStatus
+                                </span>
+                            </td>
+                            <td>@item.CreatedOn.ToString("dd-MMM-yyyy hh:mm tt")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center">
+                            No successful collections found.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <a asp-controller="BREB"
+       asp-action="Index"
+       class="btn btn-secondary">
+        Back to BREB
+    </a>
+
+</div>
