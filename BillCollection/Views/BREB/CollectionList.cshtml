@@ -7,11 +7,15 @@
 <div class="container mt-4">
 
     <h2>BREB Collection List</h2>
+    @* <p class="text-muted">
+        Test Mode - BREB API is not connected.
+    </p> *@
 
     <hr />
 
     <div class="table-responsive">
-        <table class="table table-bordered table-striped">
+        <table class="table table-bordered table-striped align-middle">
+
             <thead class="table-dark">
                 <tr>
                     <th>Transaction ID</th>
@@ -22,10 +26,12 @@
                     <th>VAT</th>
                     <th>Status</th>
                     <th>Collection Date</th>
+                    <th>Action</th>
                 </tr>
             </thead>
 
             <tbody>
+
                 @if (Model != null && Model.Any())
                 {
                     foreach (var item in Model)
@@ -37,24 +43,84 @@
                             <td>@item.BillMonth</td>
                             <td>@item.Amount.ToString("N2")</td>
                             <td>@item.Vat.ToString("N2")</td>
+
                             <td>
-                                <span class="badge bg-success">
-                                    @item.TxnStatus
-                                </span>
+                                @if (item.TxnStatus == "Success")
+                                {
+                                    <span class="badge bg-success">
+                                        Success
+                                    </span>
+                                }
+                                else if (item.TxnStatus == "WaitingForAcknowledgement")
+                                {
+                                    <span class="badge bg-warning text-dark">
+                                        Waiting For Acknowledgement
+                                    </span>
+                                }
+                                else if (item.TxnStatus == "BillFound")
+                                {
+                                    <span class="badge bg-info text-dark">
+                                        Bill Found
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">
+                                        @item.TxnStatus
+                                    </span>
+                                }
                             </td>
-                            <td>@item.CreatedOn.ToString("dd-MMM-yyyy hh:mm tt")</td>
+
+                            <td>
+                                @item.CreatedOn.ToString("dd-MMM-yyyy hh:mm tt")
+                            </td>
+
+                            <td>
+                                @if (item.TxnStatus == "WaitingForAcknowledgement")
+                                {
+                                    <form asp-controller="BREB"
+                                          asp-action="AcknowledgePayment"
+                                          method="post">
+
+                                        @Html.AntiForgeryToken()
+
+                                        <input type="hidden"
+                                               name="transactionId"
+                                               value="@item.Id" />
+
+                                        <button type="submit"
+                                                class="btn btn-success btn-sm"
+                                                onclick="return confirm('Are you sure you want to test acknowledge this payment?');">
+                                            Test Acknowledge
+                                        </button>
+                                    </form>
+                                }
+                                else if (item.TxnStatus == "Success")
+                                {
+                                    <span class="text-success">
+                                        <i class="bi bi-check-circle"></i>
+                                        Acknowledged
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">No Action</span>
+                                }
+                            </td>
                         </tr>
                     }
                 }
                 else
                 {
                     <tr>
-                        <td colspan="8" class="text-center">
-                            No successful collections found.
+                        <td colspan="9" class="text-center">
+                            No transactions found.
                         </td>
                     </tr>
                 }
+
             </tbody>
+
         </table>
     </div>
 

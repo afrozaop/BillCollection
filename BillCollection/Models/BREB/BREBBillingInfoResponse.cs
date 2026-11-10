@@ -4,6 +4,8 @@
     {
         public string? SMSAccountNo { get; set; }
 
+        public string? AccountName { get; set; }
+
         public string? RefNo { get; set; }
 
         public string? PaymentTimestamp { get; set; }

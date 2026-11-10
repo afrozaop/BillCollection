@@ -83,14 +83,14 @@ namespace BillCollection.Controllers
                     return View(model);
                 }
 
-                var transactionId =
-                    await _brebService.SaveBillingTransactionAsync(
-                        branchId,
-                        result,
-                        User.Identity?.Name,
-                        cancellationToken);
+                //var transactionId =
+                //    await _brebService.SaveBillingTransactionAsync(
+                //        branchId,
+                //        result,
+                //        User.Identity?.Name,
+                //        cancellationToken);
 
-                model.TransactionId = transactionId;
+                //model.TransactionId = transactionId;
 
                 ViewBag.BillResult = result;
 
@@ -105,99 +105,104 @@ namespace BillCollection.Controllers
                 return View(model);
             }
         }
+
+
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-       
         public async Task<IActionResult> PayBill(
-    int transactionId,
-    CancellationToken cancellationToken)
-        {
-            var branchIdClaim =
-                User.FindFirst("BranchId")?.Value;
-
-            if (!int.TryParse(
-                    branchIdClaim,
-                    out var branchId))
-            {
-                return RedirectToAction(
-                    "AccessDenied",
-                    "Account");
-            }
-
-            if (transactionId <= 0)
-            {
-                TempData["Error"] =
-                    "Invalid payment transaction.";
-
-                return RedirectToAction(
-                    nameof(BillCollection));
-            }
-
-            try
-            {
-                var result =
-                    await _brebService.SubmitPaymentAsync(
-                        branchId,
-                        transactionId,
-                        cancellationToken);
-
-                if (result == null)
-                {
-                    TempData["Error"] =
-                        "No response received.";
-
-                    return RedirectToAction(
-                        nameof(BillCollection));
-                }
-
-                if (result.Success)
-                {
-                    var acknowledged =
-                        await _brebService.AcknowledgePaymentAsync(
-                            branchId,
-                            transactionId,
-                            User.Identity?.Name,
-                            cancellationToken);
-
-                    if (acknowledged)
-                    {
-                        TempData["Success"] =
-                            "Test payment completed successfully. " +
-                            "Acknowledgment completed.";
-                    }
-                    else
-                    {
-                        TempData["Error"] =
-                            "Payment submitted, but acknowledgment failed.";
-                    }
-                }
-                else
-                {
-                    TempData["Error"] =
-                        result.Message ?? "Payment submission failed.";
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] =
-                    ex.Message;
-            }
-
-            return RedirectToAction(
-                nameof(BillCollection));
-        }
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AcknowledgePayment(
-    int transactionId,
-    CancellationToken cancellationToken)
+            string smsAccountNo,
+            CancellationToken cancellationToken)
         {
             var branchIdClaim = User.FindFirst("BranchId")?.Value;
 
             if (!int.TryParse(branchIdClaim, out var branchId))
-            {
                 return RedirectToAction("AccessDenied", "Account");
+
+            if (string.IsNullOrWhiteSpace(smsAccountNo))
+            {
+                TempData["Error"] = "SMS Account Number is required.";
+                return RedirectToAction(nameof(BillCollection));
             }
+
+            try
+            {
+                // Step 1: Re-query bill information from server
+                var request = new BREBBillingInfoRequest
+                {
+                    SMSAccountNo = smsAccountNo,
+                    BillType = 50,
+                    PayerTypeId = 2,
+                    PayerId = null
+                };
+
+                var billingInfo = await _brebService.GetBillingInfoAsync(
+                    branchId,
+                    request,
+                    cancellationToken);
+
+                if (billingInfo == null)
+                {
+                    TempData["Error"] =
+                        "Bill information could not be retrieved.";
+
+                    return RedirectToAction(nameof(BillCollection));
+                }
+
+                // Step 2: Create transaction in database
+                var transactionId =
+                    await _brebService.SaveBillingTransactionAsync(
+                        branchId,
+                        billingInfo,
+                        User.Identity?.Name,
+                        cancellationToken);
+
+                if (transactionId <= 0)
+                {
+                    TempData["Error"] =
+                        "Payment transaction could not be created.";
+
+                    return RedirectToAction(nameof(BillCollection));
+                }
+
+                // Step 3: Submit payment using newly created transaction ID
+                var result = await _brebService.SubmitPaymentAsync(
+                    branchId,
+                    transactionId,
+                    cancellationToken);
+
+                if (result == null || !result.Success)
+                {
+                    TempData["Error"] =
+                        result?.Message ?? "Test payment submission failed.";
+                }
+                else
+                {
+                    TempData["Success"] =
+                        "TEST MODE: Payment submitted successfully. " +
+                        "Waiting for test acknowledgment.";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
+            return RedirectToAction(nameof(CollectionList));
+        }
+
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AcknowledgePayment(
+     int transactionId,
+     CancellationToken cancellationToken)
+        {
+            var branchIdClaim = User.FindFirst("BranchId")?.Value;
+
+            if (!int.TryParse(branchIdClaim, out var branchId))
+                return RedirectToAction("AccessDenied", "Account");
 
             try
             {
@@ -210,7 +215,12 @@ namespace BillCollection.Controllers
                 if (success)
                 {
                     TempData["Success"] =
-                        "Test acknowledgment completed successfully.";
+                        "TEST MODE: Test acknowledgment completed successfully.";
+                }
+                else
+                {
+                    TempData["Error"] =
+                        "Test acknowledgment failed. Please check transaction status.";
                 }
             }
             catch (Exception ex)
@@ -220,6 +230,10 @@ namespace BillCollection.Controllers
 
             return RedirectToAction(nameof(CollectionList));
         }
+
+
+
+
         [HttpGet]
         public async Task<IActionResult> CollectionList(
     CancellationToken cancellationToken)
@@ -237,6 +251,10 @@ namespace BillCollection.Controllers
 
             return View(transactions);
         }
+
+
+
+
         [HttpGet]
         public async Task<IActionResult> UnsuccessfulList(
     CancellationToken cancellationToken)
@@ -256,41 +274,41 @@ namespace BillCollection.Controllers
             return View(transactions);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> DisputeList(
-    CancellationToken cancellationToken)
-        {
-            var branchIdClaim = User.FindFirst("BranchId")?.Value;
+    //    [HttpGet]
+    //    public async Task<IActionResult> DisputeList(
+    //CancellationToken cancellationToken)
+    //    {
+    //        var branchIdClaim = User.FindFirst("BranchId")?.Value;
 
-            if (!int.TryParse(branchIdClaim, out var branchId))
-            {
-                return RedirectToAction("AccessDenied", "Account");
-            }
+    //        if (!int.TryParse(branchIdClaim, out var branchId))
+    //        {
+    //            return RedirectToAction("AccessDenied", "Account");
+    //        }
 
-            var transactions = await _brebService.GetDisputeListAsync(
-                branchId,
-                cancellationToken);
+    //        var transactions = await _brebService.GetDisputeListAsync(
+    //            branchId,
+    //            cancellationToken);
 
-            return View(transactions);
-        }
+    //        return View(transactions);
+    //    }
 
-        [HttpGet]
-        public async Task<IActionResult> ReconcileReport(
-    CancellationToken cancellationToken)
-        {
-            var branchIdClaim = User.FindFirst("BranchId")?.Value;
+    //    [HttpGet]
+    //    public async Task<IActionResult> ReconcileReport(
+    //CancellationToken cancellationToken)
+    //    {
+    //        var branchIdClaim = User.FindFirst("BranchId")?.Value;
 
-            if (!int.TryParse(branchIdClaim, out var branchId))
-            {
-                return RedirectToAction("AccessDenied", "Account");
-            }
+    //        if (!int.TryParse(branchIdClaim, out var branchId))
+    //        {
+    //            return RedirectToAction("AccessDenied", "Account");
+    //        }
 
-            var report = await _brebService.GetReconcileReportAsync(
-                branchId,
-                cancellationToken);
+    //        var report = await _brebService.GetReconcileReportAsync(
+    //            branchId,
+    //            cancellationToken);
 
-            return View(report);
-        }
+    //        return View(report);
+    //    }
 
 
     }

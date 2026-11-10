@@ -147,6 +147,21 @@ public partial class ApplicationDbContext : DbContext
         });
 
         // =====================================================
+        //Decimal Precision Fix
+        // =====================================================
+
+        modelBuilder.Entity<BREBTransaction>(entity =>
+        {
+            entity.Property(x => x.Amount)
+                  .HasPrecision(18, 2);
+
+            entity.Property(x => x.Vat)
+                  .HasPrecision(18, 2);
+        });
+
+
+
+        // =====================================================
         // BRANCH BILL PROVIDER
         // =====================================================
 
@@ -197,4 +212,8 @@ public partial class ApplicationDbContext : DbContext
 
     partial void OnModelCreatingPartial(
         ModelBuilder modelBuilder);
+
+
+
+
 }

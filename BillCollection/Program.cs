@@ -5,9 +5,32 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using BillCollection.Models.BREB;
+using Serilog;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+// =========================================================
+// LOGGING - SERILOG
+// =========================================================
+
+builder.Host.UseSerilog((context, configuration) =>
+{
+    configuration
+        .MinimumLevel.Information()
+        .WriteTo.Console()
+        .WriteTo.File(
+            path: "Logs/BREB/breb-.log",
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 30,
+            shared: true,
+            outputTemplate:
+                "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+        );
+});
+
+
+
 
 // =========================================================
 // MVC
