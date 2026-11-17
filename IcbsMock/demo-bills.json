@@ -1,0 +1,5 @@
+[
+  { "SmsAccountNo": "1010032036601", "Amount": 450 },
+  { "SmsAccountNo": "1010032036602", "Amount": 1200, "DueType": "LPC", "Vat": 60 },
+  { "SmsAccountNo": "1010032036603", "Amount": 3300, "BillMonth": "Oct-2026" }
+]

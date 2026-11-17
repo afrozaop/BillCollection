@@ -2,6 +2,8 @@
 using BillCollection.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using BillCollection.Models.BREB;
+using BillCollection.ViewModels.BREB;
 
 namespace BillCollection.Services
 {
@@ -487,5 +489,151 @@ namespace BillCollection.Services
 
             await _context.SaveChangesAsync();
         }
+
+
+        // =========================================================
+        // BREB ADMIN COLLECTION REPORT
+        // DATE + BRANCH CODE SEARCH
+        // =========================================================
+
+        public async Task<BREBAdminCollectionReportViewModel>
+            GetBREBAdminCollectionReportAsync(
+                DateTime collectionDate,
+                string? branchCode)
+        {
+            var startDate = collectionDate.Date;
+            var endDate = startDate.AddDays(1);
+
+            var query =
+                from transaction in _context.BREBTransactions.AsNoTracking()
+
+                join branch in _context.Branches.AsNoTracking()
+                    on transaction.BranchId equals branch.Id
+
+                where transaction.PaymentTimestamp >= startDate
+                      && transaction.PaymentTimestamp < endDate
+
+                select new BREBAdminCollectionReportRowViewModel
+                {
+                    CollectionDate = transaction.PaymentTimestamp,
+
+                    BranchCode = branch.BranchCode,
+
+                    BranchName = branch.Name,
+
+                    SMSAccountNo = transaction.SMSAccountNo,
+
+                    RefNo = transaction.RefNo,
+
+                    PayerTransactionId = transaction.PayerTransactionId,
+
+                    Amount = transaction.Amount,
+
+                    Vat = transaction.Vat,
+
+                    TxnStatus = transaction.TxnStatus
+                };
+
+            // Branch Code Search
+            if (!string.IsNullOrWhiteSpace(branchCode))
+            {
+                branchCode = branchCode.Trim();
+
+                query = query.Where(x =>
+                    x.BranchCode.Contains(branchCode));
+            }
+
+            var transactions = await query
+                .OrderBy(x => x.BranchCode)
+                .ThenByDescending(x => x.CollectionDate)
+                .ToListAsync();
+
+            return new BREBAdminCollectionReportViewModel
+            {
+                CollectionDate = startDate,
+
+                BranchCode = branchCode,
+
+                TotalTransactions = transactions.Count,
+
+                TotalCollectionAmount = transactions.Sum(x => x.Amount),
+
+                TotalVat = transactions.Sum(x => x.Vat),
+
+                Transactions = transactions
+            };
+        }
+
+
+
+        // =========================================================
+        // BREB ADMIN UNSUCCESSFUL REPORT
+        // DATE + BRANCH CODE SEARCH
+        // =========================================================
+
+        public async Task<BREBAdminCollectionReportViewModel>
+            GetBREBAdminUnsuccessfulReportAsync(
+                DateTime collectionDate,
+                string? branchCode)
+        {
+            var startDate = collectionDate.Date;
+            var endDate = startDate.AddDays(1);
+
+            var unsuccessfulStatuses = new[]
+            {
+        "Failed",
+        "Unsuccessful"
+    };
+
+            var query =
+                from transaction in _context.BREBTransactions.AsNoTracking()
+
+                join branch in _context.Branches.AsNoTracking()
+                    on transaction.BranchId equals branch.Id
+
+                where transaction.PaymentTimestamp >= startDate
+                      && transaction.PaymentTimestamp < endDate
+                      && transaction.TxnStatus != null
+                      && unsuccessfulStatuses.Contains(transaction.TxnStatus)
+
+                select new BREBAdminCollectionReportRowViewModel
+                {
+                    CollectionDate = transaction.PaymentTimestamp,
+                    BranchCode = branch.BranchCode,
+                    BranchName = branch.Name,
+                    SMSAccountNo = transaction.SMSAccountNo,
+                    RefNo = transaction.RefNo,
+                    PayerTransactionId = transaction.PayerTransactionId,
+                    Amount = transaction.Amount,
+                    Vat = transaction.Vat,
+                    TxnStatus = transaction.TxnStatus
+                };
+
+            if (!string.IsNullOrWhiteSpace(branchCode))
+            {
+                branchCode = branchCode.Trim();
+
+                query = query.Where(x =>
+                    x.BranchCode.Contains(branchCode));
+            }
+
+            var transactions = await query
+                .OrderBy(x => x.BranchCode)
+                .ThenByDescending(x => x.CollectionDate)
+                .ToListAsync();
+
+            return new BREBAdminCollectionReportViewModel
+            {
+                CollectionDate = startDate,
+                BranchCode = branchCode,
+                TotalTransactions = transactions.Count,
+                TotalCollectionAmount = transactions.Sum(x => x.Amount),
+                TotalVat = transactions.Sum(x => x.Vat),
+                Transactions = transactions
+            };
+        }
+
+
+
     }
 }

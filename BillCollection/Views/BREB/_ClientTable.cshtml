@@ -1,0 +1,70 @@
+@* Adds "Show N entries", a search box and paging to every <table data-client-table>. No jQuery/DataTables needed. *@
+<script>
+(function () {
+    document.querySelectorAll('table[data-client-table]').forEach(function (table) {
+        var tbody = table.tBodies[0];
+        if (!tbody) return;
+
+        var rows = Array.prototype.slice.call(tbody.rows);
+        var pageSize = 10, page = 1, query = '';
+
+        var top = document.createElement('div');
+        top.className = 'd-flex flex-wrap justify-content-between align-items-center mb-2 gap-2';
+        top.innerHTML =
+            '<div>Show <select class="form-select form-select-sm d-inline-block w-auto">' +
+            '<option>10</option><option>25</option><option>50</option><option>100</option></select> entries</div>' +
+            '<div><input type="search" class="form-control form-control-sm" placeholder="Search..." /></div>';
+
+        var bottom = document.createElement('div');
+        bottom.className = 'd-flex flex-wrap justify-content-between align-items-center mt-2 gap-2';
+
+        var host = table.closest('.table-responsive') || table;
+        host.parentNode.insertBefore(top, host);
+        host.parentNode.insertBefore(bottom, host.nextSibling);
+
+        var select = top.querySelector('select');
+        var input = top.querySelector('input');
+
+        function render() {
+            var q = query.toLowerCase();
+            var matched = rows.filter(function (r) {
+                return !q || r.textContent.toLowerCase().indexOf(q) > -1;
+            });
+            var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+            if (page > pages) page = pages;
+
+            rows.forEach(function (r) { r.style.display = 'none'; });
+            matched.slice((page - 1) * pageSize, page * pageSize).forEach(function (r) { r.style.display = ''; });
+
+            bottom.innerHTML = '';
+            var info = document.createElement('div');
+            info.textContent = matched.length
+                ? 'Showing ' + ((page - 1) * pageSize + 1) + ' to ' + Math.min(page * pageSize, matched.length) +
+                  ' of ' + matched.length + ' entries'
+                : 'No matching entries';
+
+            var nav = document.createElement('div');
+            nav.className = 'btn-group btn-group-sm';
+            function add(label, target, disabled) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'btn btn-outline-secondary';
+                b.textContent = label;
+                b.disabled = disabled;
+                b.onclick = function () { page = target; render(); };
+                nav.appendChild(b);
+            }
+            add('Previous', page - 1, page <= 1);
+            add('Page ' + page + ' / ' + pages, page, true);
+            add('Next', page + 1, page >= pages);
+
+            bottom.appendChild(info);
+            bottom.appendChild(nav);
+        }
+
+        select.onchange = function () { pageSize = parseInt(select.value, 10); page = 1; render(); };
+        input.oninput = function () { query = input.value; page = 1; render(); };
+        render();
+    });
+})();
+</script>

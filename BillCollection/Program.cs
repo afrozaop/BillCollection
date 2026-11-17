@@ -66,7 +66,22 @@ builder.Services.AddScoped<
 builder.Services.Configure<BREBOptions>(
     builder.Configuration.GetSection("BREB"));
 
-builder.Services.AddHttpClient<IBREBService, BREBService>();
+// ---- BREB / ICBS payment API ----
+builder.Services.AddMemoryCache();
+
+builder.Services.AddHttpClient("BREB", (sp, client) =>
+{
+    var o = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<BREBOptions>>().Value;
+
+    if (!string.IsNullOrWhiteSpace(o.BaseUrl))
+        client.BaseAddress = new Uri(o.BaseUrl.TrimEnd('/') + "/");
+
+    client.Timeout = TimeSpan.FromSeconds(o.TimeoutSeconds);
+});
+
+builder.Services.AddSingleton<IBREBTokenProvider, BREBTokenProvider>();
+builder.Services.AddScoped<IBREBApiClient, BREBApiClient>();
+builder.Services.AddScoped<IBREBService, BREBService>();
 
 // =========================================================
 // AUTHENTICATION

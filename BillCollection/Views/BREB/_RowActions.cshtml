@@ -1,0 +1,32 @@
+@model BillCollection.ViewModels.BREB.BREBRowActionViewModel
+
+<div class="d-flex flex-wrap gap-1">
+
+    <form asp-controller="BREB" asp-action="CheckStatus" method="post">
+        <input type="hidden" name="transactionId" value="@Model.TransactionId" />
+        <input type="hidden" name="returnTo" value="@Model.ReturnTo" />
+        <input type="hidden" name="date" value="@(Model.Date?.ToString("yyyy-MM-dd"))" />
+        <button type="submit" class="btn btn-sm btn-outline-primary">Check &amp; Sync</button>
+    </form>
+
+    @if (Model.CanDispute)
+    {
+        <form asp-controller="BREB" asp-action="SubmitDispute" method="post"
+              onsubmit="return confirm('Ask BREB to ACKNOWLEDGE this payment? Do this only if the customer\'s cash was collected.');">
+            <input type="hidden" name="transactionId" value="@Model.TransactionId" />
+            <input type="hidden" name="disputeType" value="5" />
+            <input type="hidden" name="returnTo" value="@Model.ReturnTo" />
+            <input type="hidden" name="date" value="@(Model.Date?.ToString("yyyy-MM-dd"))" />
+            <button type="submit" class="btn btn-sm btn-warning">Dispute: Acknowledge</button>
+        </form>
+
+        <form asp-controller="BREB" asp-action="SubmitDispute" method="post"
+              onsubmit="return confirm('Ask BREB to RESET this bill? Do this only if the customer did NOT pay.');">
+            <input type="hidden" name="transactionId" value="@Model.TransactionId" />
+            <input type="hidden" name="disputeType" value="10" />
+            <input type="hidden" name="returnTo" value="@Model.ReturnTo" />
+            <input type="hidden" name="date" value="@(Model.Date?.ToString("yyyy-MM-dd"))" />
+            <button type="submit" class="btn btn-sm btn-outline-danger">Dispute: Reset</button>
+        </form>
+    }
+</div>

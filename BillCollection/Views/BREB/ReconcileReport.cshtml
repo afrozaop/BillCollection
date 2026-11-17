@@ -1,4 +1,3 @@
-﻿
 @model BillCollection.ViewModels.BREB.BREBReconcileReportViewModel
 
 @{
@@ -8,64 +7,118 @@
 <div class="container mt-4">
     <h2>BREB Reconcile Report</h2>
     <p class="text-muted">
-        Test report based on transactions saved in the local database.
+        Payments of one day in this system compared with BREB's own report (<code>report/detail</code>).
     </p>
-    <hr />
 
-    <hr class="my-4" />
-
-    <h4>Transaction Details</h4>
-
-    @if (Model.Transactions != null && Model.Transactions.Any())
+    @if (TempData["Success"] != null)
     {
-        <div class="table-responsive mt-3">
-            <table class="table table-bordered table-striped table-hover">
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    @if (Model.IsMockMode)
+    {
+        <div class="alert alert-warning">
+            <strong>TEST MODE</strong> - BREB side is simulated from the local records.
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.BrebError))
+    {
+        <div class="alert alert-danger">
+            <strong>Could not load the BREB report:</strong> @Model.BrebError<br />
+            Only the local figures are shown below.
+        </div>
+    }
+
+    <form method="get" asp-action="ReconcileReport" class="row g-2 align-items-end mb-4">
+        <div class="col-auto">
+            <label class="form-label" for="date">Date</label>
+            <input type="date" id="date" name="date" class="form-control"
+                   value="@Model.ReportDate.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Show</button>
+        </div>
+    </form>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="card"><div class="card-body">
+            <div class="text-muted">Local - Successful</div>
+            <div class="fs-4">@Model.SuccessfulPayments</div>
+            <div>@Model.TotalSuccessfulAmount.ToString("N2")</div>
+        </div></div></div>
+        <div class="col-md-3"><div class="card"><div class="card-body">
+            <div class="text-muted">BREB - Paid Acknowledged</div>
+            <div class="fs-4">@Model.BrebPaidCount</div>
+            <div>@Model.BrebPaidAmount.ToString("N2")</div>
+        </div></div></div>
+        <div class="col-md-3"><div class="card"><div class="card-body">
+            <div class="text-muted">Local - Pending / Waiting</div>
+            <div class="fs-4">@Model.PendingPayments</div>
+            <div class="text-muted">BREB waiting: @Model.BrebWaitingCount</div>
+        </div></div></div>
+        <div class="col-md-3"><div class="card"><div class="card-body">
+            <div class="text-muted">Matched / Mismatch</div>
+            <div class="fs-4">
+                <span class="text-success">@Model.MatchedCount</span> /
+                <span class="@(Model.MismatchCount > 0 ? "text-danger" : "")">@Model.MismatchCount</span>
+            </div>
+        </div></div></div>
+    </div>
+
+    @if (Model.Rows.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle">
                 <thead class="table-dark">
                     <tr>
-                        <th>Transaction ID</th>
+                        <th>Result</th>
+                        <th>Txn Id</th>
                         <th>SMS Account No</th>
                         <th>Reference No</th>
-                        <th>Bill Month</th>
-                        <th>Due Type</th>
-                        <th>Amount</th>
-                        <th>VAT</th>
-                        <th>Status</th>
-                        <th>Transaction Date</th>
+                        <th class="text-end">Amount</th>
+                        <th>Local</th>
+                        <th>BREB</th>
+                        <th>Note</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in Model.Transactions)
+                    @foreach (var row in Model.Rows.OrderByDescending(r => r.Result != "Matched"))
                     {
-                        <tr>
-                            <td>@item.Id</td>
-                            <td>@item.SMSAccountNo</td>
-                            <td>@item.RefNo</td>
-                            <td>@item.BillMonth</td>
-                            <td>@item.DueType</td>
-                            <td>@item.Amount.ToString("N2")</td>
-                            <td>@item.Vat.ToString("N2")</td>
+                        <tr class="@(row.Result == "Matched" ? "" : "table-warning")">
                             <td>
-                                @if (item.TxnStatus == "Success")
+                                @if (row.Result == "Matched")
                                 {
-                                    <span class="badge bg-success">
-                                        @item.TxnStatus
-                                    </span>
-                                }
-                                else if (item.TxnStatus == "Failed")
-                                {
-                                    <span class="badge bg-danger">
-                                        @item.TxnStatus
-                                    </span>
+                                    <span class="badge bg-success">Matched</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-warning text-dark">
-                                        @item.TxnStatus
-                                    </span>
+                                    <span class="badge bg-danger">@row.Result</span>
                                 }
                             </td>
+                            <td>@row.TransactionId</td>
+                            <td>@row.SMSAccountNo</td>
+                            <td class="text-break">@row.RefNo</td>
+                            <td class="text-end">@row.Amount.ToString("N2")</td>
+                            <td>@row.LocalStatus</td>
+                            <td>@row.BrebStatus</td>
+                            <td>@row.Note</td>
                             <td>
-                                @item.CreatedOn.ToString("dd-MMM-yyyy hh:mm tt")
+                                @if (row.TransactionId.HasValue && row.CanSync)
+                                {
+                                    <partial name="_RowActions" model="@(new BillCollection.ViewModels.BREB.BREBRowActionViewModel
+                                    {
+                                        TransactionId = row.TransactionId.Value,
+                                        ReturnTo = "ReconcileReport",
+                                        Date = Model.ReportDate,
+                                        CanDispute = row.CanDispute
+                                    })" />
+                                }
                             </td>
                         </tr>
                     }
@@ -73,17 +126,10 @@
             </table>
         </div>
     }
-    else
+    else if (string.IsNullOrEmpty(Model.BrebError))
     {
-        <div class="alert alert-info mt-3">
-            No transaction details found.
-        </div>
+        <div class="alert alert-info">No payments found for this date.</div>
     }
-   
 
-    <a asp-controller="BREB"
-       asp-action="Index"
-       class="btn btn-secondary mt-4">
-        Back to BREB
-    </a>
+    <a asp-controller="BREB" asp-action="Index" class="btn btn-secondary mt-3">Back to BREB</a>
 </div>

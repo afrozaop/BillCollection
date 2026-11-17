@@ -1,4 +1,4 @@
-﻿
+
 @model BillCollection.ViewModels.BREB.BREBBillCollectionViewModel
 
 @{
@@ -9,12 +9,14 @@
 
     <h2>BREB Bill Collection</h2>
 
-    <!-- TEST MODE WARNING -->
-   @*  <div class="alert alert-warning">
-        <strong>TEST MODE</strong><br />
-        BREB API is not connected. This is a test environment.
-        No real payment will be processed.
-    </div> *@
+    @if (ViewBag.IsMockMode == true)
+    {
+        <div class="alert alert-warning">
+            <strong>TEST MODE</strong><br />
+            BREB API is not connected. This is a test environment.
+            No real payment will be processed.
+        </div>
+    }
 
     <!-- Success Message -->
     @if (TempData["Success"] != null)
@@ -133,6 +135,11 @@
                             <td>@bill.ExpiresIn</td>
                         </tr>
 
+                        <tr>
+                            <th>Payer Transaction Id</th>
+                            <td>@bill.PayerTransactionId</td>
+                        </tr>
+
                     </table>
 
                     <!-- Customer Payable Amount -->
@@ -162,7 +169,7 @@
                                 class="btn btn-success"
                                 onclick="return confirm('Are you sure you want to submit this payment?');">
 
-                            Pay Bill (TEST MODE)
+                            @(ViewBag.IsMockMode == true ? "Pay Bill (TEST MODE)" : "Pay Bill")
 
                         </button>
 

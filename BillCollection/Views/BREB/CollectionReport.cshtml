@@ -1,0 +1,73 @@
+@model BillCollection.ViewModels.BREB.BREBCollectionReportViewModel
+
+@{
+    ViewData["Title"] = "BREB Collection Report";
+}
+
+<div class="container mt-4">
+    <h2>BREB Collection Report</h2>
+    <p class="text-muted">Successful (acknowledged) collections of this branch.</p>
+
+    <form method="get" asp-action="CollectionReport" class="row g-2 align-items-end mb-4">
+        <div class="col-auto">
+            <label class="form-label" for="from">From</label>
+            <input type="date" id="from" name="from" class="form-control" value="@Model.From.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="col-auto">
+            <label class="form-label" for="to">To</label>
+            <input type="date" id="to" name="to" class="form-control" value="@Model.To.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Show</button>
+        </div>
+    </form>
+
+    @if (Model.Items.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Date</th>
+                        <th>Payer Txn Id</th>
+                        <th>SMS Account No</th>
+                        <th>Bill Month</th>
+                        <th>Due Type</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-end">VAT</th>
+                        <th>Collected By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td>@item.CreatedOn.ToString("dd-MMM-yyyy hh:mm tt")</td>
+                            <td>@item.PayerTransactionId</td>
+                            <td>@item.SMSAccountNo</td>
+                            <td>@item.BillMonth</td>
+                            <td>@item.DueType</td>
+                            <td class="text-end">@item.Amount.ToString("N2")</td>
+                            <td class="text-end">@item.Vat.ToString("N2")</td>
+                            <td>@item.CreatedBy</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="table-light fw-bold">
+                    <tr>
+                        <td colspan="5">Total (@Model.TotalCount bills)</td>
+                        <td class="text-end">@Model.TotalAmount.ToString("N2")</td>
+                        <td class="text-end">@Model.TotalVat.ToString("N2")</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">No collections found for this period.</div>
+    }
+
+    <a asp-controller="BREB" asp-action="Index" class="btn btn-secondary">Back to BREB</a>
+</div>

@@ -1,4 +1,6 @@
 ﻿using BillCollection.Models;
+using BillCollection.ViewModels.BREB;
+
 
 namespace BillCollection.Interfaces
 {
@@ -84,5 +86,21 @@ namespace BillCollection.Interfaces
             int[] providerIds,
             string? createdBy);
         Task ResetUserPasswordAsync(long id, string newPassword);
+
+        // =========================================================
+        // BREB ADMIN COLLECTION REPORT
+        // =========================================================
+
+        Task<BREBAdminCollectionReportViewModel>
+            GetBREBAdminCollectionReportAsync(
+                DateTime collectionDate,
+                string? branchCode);
+
+
+        Task<BREBAdminCollectionReportViewModel>
+    GetBREBAdminUnsuccessfulReportAsync(
+        DateTime collectionDate,
+        string? branchCode);
+
     }
 }

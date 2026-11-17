@@ -1,15 +1,59 @@
-﻿<!DOCTYPE html>
+﻿@inject BillCollection.Interfaces.IBranchService BranchService
+@inject BillCollection.Interfaces.IAdminService AdminService
+
+@{
+    var isAdminUser =
+        User.Identity?.IsAuthenticated == true &&
+        User.IsInRole("HeadOffice");
+
+    var isBranchUser =
+        User.Identity?.IsAuthenticated == true &&
+        User.IsInRole("Branch");
+
+    // Admin: All Active Providers
+    var activeProviders =
+        new List<BillCollection.Models.BillProvider>();
+
+    if (isAdminUser)
+    {
+        activeProviders =
+            await AdminService.GetActiveProvidersAsync();
+    }
+
+    // Branch: Only Assigned Active Providers
+    var assignedProviders =
+        new List<BillCollection.Models.BranchBillProvider>();
+
+    if (isBranchUser)
+    {
+        var branchIdValue = User.FindFirst("BranchId")?.Value;
+
+        if (int.TryParse(branchIdValue, out var branchId))
+        {
+            assignedProviders =
+                await BranchService.GetAssignedProvidersAsync(branchId);
+        }
+    }
+
+    var currentController =
+        ViewContext.RouteData.Values["controller"]?.ToString();
+
+    var currentAction =
+        ViewContext.RouteData.Values["action"]?.ToString();
+
+    var isAdminBrebReport =
+        currentController == "Admin" &&
+        currentAction == "BREBCollectionReport";
+}
+
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0" />
-
-    <title>
-        @ViewData["Title"] - BillCollection
-    </title>
+    <title>@ViewData["Title"] - BillCollection</title>
 
     <link rel="stylesheet"
           href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -21,89 +65,141 @@
     <link rel="stylesheet"
           href="~/BillCollection.styles.css"
           asp-append-version="true" />
+
+    <style>
+        .app-layout {
+            display: flex;
+            gap: 20px;
+            min-height: 75vh;
+        }
+
+        .app-sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .sidebar-heading {
+            font-size: 12px;
+            font-weight: bold;
+            color: #6c757d;
+            margin: 10px 0;
+            text-transform: uppercase;
+        }
+
+        .app-sidebar .nav-link {
+            color: #343a40;
+            padding: 9px 12px;
+            border-radius: 5px;
+            display: block;
+            text-decoration: none;
+        }
+
+            .app-sidebar .nav-link:hover {
+                background: #f0f4f8;
+                color: #0d6efd;
+            }
+
+            .app-sidebar .nav-link.active {
+                background: #e7f1ff;
+                color: #0d6efd;
+                font-weight: 600;
+            }
+
+        .provider-toggle {
+            width: 100%;
+            border: none;
+            background: transparent;
+            text-align: left;
+            padding: 10px 12px;
+            border-radius: 5px;
+            color: #212529;
+            font-weight: 600;
+        }
+
+            .provider-toggle:hover {
+                background: #f0f4f8;
+            }
+
+        .provider-submenu {
+            padding-left: 15px;
+            margin-top: 5px;
+        }
+
+        .app-main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        @@media (max-width: 767px) {
+            .app-layout {
+                display: block;
+            }
+
+            .app-sidebar {
+                width: 100%;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-    <!-- ========================= -->
     <!-- NAVBAR -->
-    <!-- ========================= -->
-
     <header>
-
         <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow mb-3">
 
             <div class="container-fluid">
 
-                <!-- Logo -->
                 <a class="navbar-brand fw-bold"
                    asp-controller="Home"
                    asp-action="Index">
-
                     Bill Collection
-
                 </a>
 
-
-                <!-- Mobile Menu Button -->
                 <button class="navbar-toggler"
                         type="button"
                         data-bs-toggle="collapse"
-                        data-bs-target=".navbar-collapse"
-                        aria-controls="navbarSupportedContent"
+                        data-bs-target="#mainNavbar"
+                        aria-controls="mainNavbar"
                         aria-expanded="false"
                         aria-label="Toggle navigation">
 
                     <span class="navbar-toggler-icon"></span>
-
                 </button>
 
-
-                <!-- Navbar Content -->
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-
-
-                    <!-- ========================= -->
-                    <!-- LEFT MENU -->
-                    <!-- ========================= -->
+                <div class="navbar-collapse collapse" id="mainNavbar">
 
                     <ul class="navbar-nav flex-grow-1">
 
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-
-                            <!-- Head Office Menu -->
-                            @if (User.IsInRole("HeadOffice"))
+                            @if (isAdminUser)
                             {
                                 <li class="nav-item">
-
                                     <a class="nav-link text-dark"
                                        asp-controller="Admin"
                                        asp-action="Index">
-
                                         Admin Dashboard
-
                                     </a>
-
                                 </li>
                             }
-                         
 
-                            <!-- Branch Menu -->
-                            @if (User.IsInRole("Branch"))
+                            @if (isBranchUser)
                             {
                                 <li class="nav-item">
-
                                     <a class="nav-link text-dark"
                                        asp-controller="Branch"
                                        asp-action="Index">
-
                                         Branch Dashboard
-
                                     </a>
-
                                 </li>
                             }
+
                             <li class="nav-item">
                                 <a class="nav-link"
                                    asp-controller="Account"
@@ -115,14 +211,9 @@
 
                     </ul>
 
-
-                    <!-- ========================= -->
-                    <!-- RIGHT SIDE -->
-                    <!-- ========================= -->
-
                     <ul class="navbar-nav align-items-center">
 
-                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
                                 <span class="navbar-text me-3">
@@ -143,16 +234,8 @@
                                             class="btn btn-danger btn-sm">
                                         Logout
                                     </button>
-
                                 </form>
                             </li>
-                           @*  <li class="nav-item">
-                                <a class="nav-link"
-                                   asp-controller="Account"
-                                   asp-action="ChangePassword">
-                                    Change Password
-                                </a>
-                            </li> *@
                         }
                         else
                         {
@@ -166,69 +249,301 @@
                         }
 
                     </ul>
+
                 </div>
-
             </div>
-
         </nav>
-
     </header>
 
-
-    <!-- ========================= -->
     <!-- MAIN CONTENT -->
-    <!-- ========================= -->
+    @if (isBranchUser)
+    {
+        <!-- BRANCH USER LAYOUT -->
 
-    <div class="container">
+        <div class="container-fluid px-3">
 
-        <main role="main"
-              class="pb-3">
+            <div class="app-layout">
 
-            @RenderBody()
+                <aside class="app-sidebar">
 
-        </main>
+                    <div class="sidebar-heading">
+                        Branch Navigation
+                    </div>
 
-    </div>
+                    <a class="nav-link @(currentController == "Branch" ? "active" : "")"
+                       asp-controller="Branch"
+                       asp-action="Index">
+                        🏠 Dashboard
+                    </a>
 
+                    <hr />
 
-    <!-- ========================= -->
+                    <div class="sidebar-heading">
+                        Bill Providers
+                    </div>
+
+                    @foreach (var item in assignedProviders)
+                    {
+                        var providerCode =
+                        item.Provider?.ProviderCode?.ToUpperInvariant() ?? "";
+
+                        var providerName =
+                        item.Provider?.ProviderName ?? "";
+
+                        var isBreb =
+                        providerCode.Contains("BREB") ||
+                        providerName.Contains("BREB");
+
+                        var isProviderActive =
+                        isBreb &&
+                        string.Equals(
+                        currentController,
+                        "BREB",
+                        StringComparison.OrdinalIgnoreCase);
+
+                        var collapseId =
+                        "branchProviderMenu" + item.ProviderId;
+
+                        <div class="mb-2">
+
+                            <button class="provider-toggle"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#@collapseId"
+                                    aria-expanded="@(isProviderActive ? "true" : "false")"
+                                    aria-controls="@collapseId">
+
+                                ⚡ @providerName
+                                <span class="float-end">⌄</span>
+
+                            </button>
+
+                            <div class="collapse provider-submenu @(isProviderActive ? "show" : "")"
+                                 id="@collapseId">
+
+                                @if (isBreb)
+                                {
+                                    <a class="nav-link @(currentAction == "BillCollection" ? "active" : "")"
+                                       asp-controller="BREB"
+                                       asp-action="BillCollection">
+                                        Bill Collection
+                                    </a>
+
+                                    <a class="nav-link @(currentAction == "CollectionList" ? "active" : "")"
+                                       asp-controller="BREB"
+                                       asp-action="CollectionList">
+                                        Collection List
+                                    </a>
+
+                                    <a class="nav-link @(currentAction == "UnsuccessfulList" ? "active" : "")"
+                                       asp-controller="BREB"
+                                       asp-action="UnsuccessfulList">
+                                        Unsuccessful List
+                                    </a>
+
+                                    <a class="nav-link @(currentAction == "DisputeList" ? "active" : "")"
+                                       asp-controller="BREB"
+                                       asp-action="DisputeList">
+                                        Dispute List
+                                    </a>
+
+                                    <a class="nav-link @(currentAction == "ReconcileReport" ? "active" : "")"
+                                       asp-controller="BREB"
+                                       asp-action="ReconcileReport">
+                                        Reconcile Report
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="nav-link text-muted small">
+                                        Module menu will be configured
+                                    </span>
+                                }
+
+                            </div>
+                        </div>
+                    }
+
+                </aside>
+
+                <main role="main" class="app-main-content pb-3">
+
+                    @RenderBody()
+
+                </main>
+
+            </div>
+        </div>
+    }
+    else if (isAdminUser)
+    {
+        <!-- ADMIN USER LAYOUT -->
+
+        <div class="container-fluid px-3">
+
+            <div class="app-layout">
+
+                <aside class="app-sidebar">
+
+                    <div class="sidebar-heading">
+                        Admin Navigation
+                    </div>
+
+                    <a class="nav-link @(currentController == "Admin" && currentAction == "Index" ? "active" : "")"
+                       asp-controller="Admin"
+                       asp-action="Index">
+                        🏠 Dashboard
+                    </a>
+
+                    <hr />
+
+                    <div class="sidebar-heading">
+                        Bill Providers
+                    </div>
+
+                    @foreach (var provider in activeProviders)
+                    {
+                        var providerCode =
+                        provider.ProviderCode?.ToUpperInvariant() ?? "";
+
+                        var providerName =
+                        provider.ProviderName ?? "";
+
+                        var isBreb =
+                        providerCode.Contains("BREB") ||
+                        providerName.Contains("BREB");
+
+                        var collapseId =
+                        "adminProviderMenu" + provider.Id;
+
+                        var isProviderActive =
+                        isBreb && isAdminBrebReport;
+
+                        <div class="mb-2">
+
+                            <button class="provider-toggle"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#@collapseId"
+                                    aria-expanded="@(isProviderActive ? "true" : "false")"
+                                    aria-controls="@collapseId">
+
+                                ⚡ @providerName
+                                <span class="float-end">⌄</span>
+
+                            </button>
+
+                            <div class="collapse provider-submenu @(isProviderActive ? "show" : "")"
+                                 id="@collapseId">
+
+                                @if (isBreb)
+                                {
+                                    <div class="sidebar-heading">
+                                        BREB Admin Reports
+                                    </div>
+
+                                    <a class="nav-link @(isAdminBrebReport ? "active" : "")"
+                                       asp-controller="Admin"
+                                       asp-action="BREBCollectionReport">
+
+                                        <i class="bi bi-file-earmark-bar-graph me-2"></i>
+                                        Collection Report
+
+                                    </a>
+
+                                    <a class="nav-link @(currentController == "Admin" &&
+                                                            currentAction == "BREBUnsuccessfulReport" ? "active" : "")"
+                           asp-controller="Admin"
+                           asp-action="BREBUnsuccessfulReport">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Unsuccessful Report
+                        </a>
+                                }
+                                else
+                                {
+                                    <span class="nav-link text-muted small">
+                                        Admin reports will be configured
+                                    </span>
+                                }
+
+                            </div>
+                        </div>
+                    }
+
+                    <hr />
+
+                    <div class="sidebar-heading">
+                        Administration
+                    </div>
+
+                    <a class="nav-link @(currentController == "Admin" && currentAction == "Users" ? "active" : "")"
+                       asp-controller="Admin"
+                       asp-action="Users">
+                        👥 User Management
+                    </a>
+
+                    <a class="nav-link @(currentController == "Admin" && (currentAction == "BillProviders" || currentAction == "CreateBillProvider" || currentAction == "EditBillProvider") ? "active" : "")"
+                       asp-controller="Admin"
+                       asp-action="BillProviders">
+                        ⚙️ Provider Management
+                    </a>
+
+                    <a class="nav-link @(currentController == "Admin" && currentAction == "BranchProviderAccess" ? "active" : "")"
+                       asp-controller="Admin"
+                       asp-action="BranchProviderAccess">
+                        🔗 Provider Assignment
+                    </a>
+
+                </aside>
+
+                <main role="main" class="app-main-content pb-3">
+
+                    @RenderBody()
+
+                </main>
+
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- NORMAL / ANONYMOUS LAYOUT -->
+
+        <div class="container">
+
+            <main role="main" class="pb-3">
+
+                @RenderBody()
+
+            </main>
+
+        </div>
+    }
+
     <!-- FOOTER -->
-    <!-- ========================= -->
 
     <footer class="border-top footer text-muted">
 
         <div class="container">
-
             &copy; 2026 - BillCollection -
-
             <a asp-controller="Home"
                asp-action="Privacy">
-
                 Privacy
-
             </a>
-
         </div>
 
     </footer>
 
-
-    <!-- ========================= -->
     <!-- SCRIPTS -->
-    <!-- ========================= -->
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 
     <script src="~/js/site.js"
-            asp-append-version="true">
-    </script>
+            asp-append-version="true"></script>
 
-    @await RenderSectionAsync(
-    "Scripts",
-        required: false)
+    @await RenderSectionAsync("Scripts", required: false)
 
 </body>
-
 </html>

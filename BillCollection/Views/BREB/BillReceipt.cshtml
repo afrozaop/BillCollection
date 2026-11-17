@@ -1,0 +1,72 @@
+@model BillCollection.ViewModels.BREB.BREBReceiptViewModel
+@{
+    Layout = null;
+    var t = Model.Transaction;
+    var paidOn = t.PaymentTimestamp ?? t.CreatedOn;
+    var isTest = (t.RefNo ?? "").StartsWith("TEST-");
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BREB Bill Receipt - @t.PayerTransactionId</title>
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; color: #000; margin: 0; background: #f2f2f2; }
+        .bar { text-align: center; padding: 10px; }
+        .bar button { padding: 6px 18px; margin: 0 4px; cursor: pointer; }
+        .receipt { width: 560px; max-width: 100%; margin: 10px auto; background: #fff; border: 1px solid #333; padding: 18px 22px; position: relative; }
+        h1 { font-size: 18px; text-align: center; margin: 0; }
+        h2 { font-size: 14px; text-align: center; margin: 4px 0 12px; font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        td { padding: 5px 4px; border-bottom: 1px dotted #999; vertical-align: top; }
+        td.l { width: 38%; font-weight: bold; }
+        td.r { text-align: left; word-break: break-all; }
+        .amount td { font-size: 15px; border-top: 2px solid #000; border-bottom: 2px solid #000; }
+        .note { font-size: 11px; margin-top: 10px; }
+        .sign { display: flex; justify-content: space-between; margin-top: 46px; font-size: 12px; }
+        .sign div { border-top: 1px solid #000; padding-top: 4px; width: 40%; text-align: center; }
+        .foot { font-size: 11px; text-align: center; margin-top: 14px; color: #444; }
+        .test { position: absolute; top: 40%; left: 10%; font-size: 40px; color: rgba(200,0,0,.25); transform: rotate(-20deg); font-weight: bold; }
+        @@media print { body { background: #fff; } .bar { display: none; } .receipt { border: 1px solid #000; margin: 0 auto; } }
+    </style>
+</head>
+<body>
+    <div class="bar">
+        <button onclick="window.print()">Print</button>
+        <button onclick="window.close()">Close</button>
+    </div>
+
+    <div class="receipt">
+        @if (isTest)
+        {
+            <div class="test">TEST RECEIPT</div>
+        }
+        <h1>Bangladesh Krishi Bank</h1>
+        <h2>BREB Electricity Bill Collection Receipt</h2>
+
+        <table>
+            <tr><td class="l">Branch</td><td class="r">@Model.BranchCode @(string.IsNullOrEmpty(Model.BranchName) ? "" : "- " + Model.BranchName)</td></tr>
+            <tr><td class="l">Date &amp; Time</td><td class="r">@paidOn.ToString("dd-MMM-yyyy hh:mm tt")</td></tr>
+            <tr><td class="l">Transaction ID</td><td class="r">@t.PayerTransactionId</td></tr>
+            <tr><td class="l">SMS Account No</td><td class="r">@t.SMSAccountNo</td></tr>
+            <tr><td class="l">Reference No</td><td class="r">@t.RefNo</td></tr>
+            <tr><td class="l">Bill Month</td><td class="r">@t.BillMonth</td></tr>
+            <tr><td class="l">Due Type</td><td class="r">@t.DueType</td></tr>
+            <tr class="amount"><td class="l">Amount Collected</td><td class="r">Tk. @t.Amount.ToString("N2")</td></tr>
+            <tr><td class="l">VAT (included)</td><td class="r">Tk. @t.Vat.ToString("N2")</td></tr>
+            <tr><td class="l">Status</td><td class="r">Paid - Acknowledged by BREB</td></tr>
+            <tr><td class="l">Collected By</td><td class="r">@t.CreatedBy</td></tr>
+        </table>
+
+        <div class="note">The VAT amount is shown for information only; the customer paid the Amount Collected.</div>
+
+        <div class="sign">
+            <div>Customer</div>
+            <div>Authorised Officer</div>
+        </div>
+
+        <div class="foot">Printed on @DateTime.Now.ToString("dd-MMM-yyyy hh:mm tt")</div>
+    </div>
+</body>
+</html>

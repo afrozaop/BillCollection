@@ -1,27 +1,87 @@
-﻿
 @model List<BillCollection.Models.BREB.BREBTransaction>
 
 @{
-    ViewData["Title"] = "BREB Dispute Payments";
+    ViewData["Title"] = "Dispute Bill";
 }
 
-<div class="container mt-4">
-    <h2>BREB Dispute Payments</h2>
+<div class="container-fluid mt-4">
+
+    <h2>Dispute Bill</h2>
     <hr />
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-header"><strong>Update Dispute Payment</strong> - Dispute BREB Postpaid Bill</div>
+        <div class="card-body">
+            <form asp-controller="BREB" asp-action="DisputeBill" method="post"
+                  onsubmit="return confirm('Send this dispute to BREB?');">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label" for="payerTransactionId">Payer Transaction Id</label>
+                        <input type="text" id="payerTransactionId" name="payerTransactionId" class="form-control" required />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="smsAccountNo">SMS Account No</label>
+                        <input type="text" id="smsAccountNo" name="smsAccountNo" class="form-control" required />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="disputeType">Dispute Type</label>
+                        <select id="disputeType" name="disputeType" class="form-select">
+                            <option value="5">Acknowledge</option>
+                            <option value="10">Reset</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-warning mt-3">Submit Dispute</button>
+            </form>
+
+            <ul class="small text-muted mt-3 mb-0">
+                <li><strong>Reset</strong>: a wrong SMS account was posted and the payment must be cancelled.
+                    Take Transaction Id and SMS account from the <a asp-action="CollectionList">Collection List</a>.</li>
+                <li><strong>Acknowledge</strong>: when posting a bill BREB answers "Bill already submitted, waiting for
+                    acknowledge". Take them from the <a asp-action="UnsuccessfulList">Unsuccessful List</a>.</li>
+                <li>BREB accepts a dispute only on the day of the payment.</li>
+            </ul>
+        </div>
+    </div>
+
+    <h4>Submitted disputes</h4>
+    <p class="text-muted">Use <strong>Check &amp; Sync</strong> to see BREB's decision.</p>
+
+    <form method="get" asp-action="DisputeList" class="row g-2 align-items-end mb-3">
+        <div class="col-auto">
+            <label class="form-label" for="date">Collection Date</label>
+            <input type="date" id="date" name="date" class="form-control" value="@ViewBag.Date" />
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Show</button>
+            <a asp-action="DisputeList" class="btn btn-outline-secondary">Show all</a>
+        </div>
+    </form>
 
     @if (Model != null && Model.Any())
     {
         <div class="table-responsive">
-            <table class="table table-bordered table-striped">
+            <table class="table table-bordered table-striped align-middle" data-client-table>
                 <thead class="table-dark">
                     <tr>
+                        <th>#</th>
                         <th>Transaction ID</th>
                         <th>SMS Account No</th>
                         <th>Reference No</th>
                         <th>Bill Month</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Date</th>
+                        <th class="text-end">Amount</th>
+                        <th>Dispute</th>
+                        <th>Disputed By / On</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -29,34 +89,39 @@
                     {
                         <tr>
                             <td>@item.Id</td>
+                            <td>@item.PayerTransactionId</td>
                             <td>@item.SMSAccountNo</td>
-                            <td>@item.RefNo</td>
+                            <td class="text-break">@item.RefNo</td>
                             <td>@item.BillMonth</td>
-                            <td>@item.Amount.ToString("N2")</td>
+                            <td class="text-end">@item.Amount.ToString("N2")</td>
                             <td>
-                                <span class="badge bg-danger">
-                                    @item.TxnStatus
+                                <span class="badge bg-warning text-dark">
+                                    @(item.DisputeType == "5" ? "Acknowledge" : item.DisputeType == "10" ? "Reset" : item.DisputeType)
                                 </span>
                             </td>
                             <td>
-                                @item.CreatedOn.ToString("dd-MMM-yyyy hh:mm tt")
+                                @item.DisputedBy<br />
+                                <small class="text-muted">@item.DisputedOn?.ToString("dd-MMM-yyyy hh:mm tt")</small>
+                            </td>
+                            <td>
+                                <partial name="_RowActions" model="@(new BillCollection.ViewModels.BREB.BREBRowActionViewModel
+                                {
+                                    TransactionId = item.Id,
+                                    ReturnTo = "DisputeList"
+                                })" />
                             </td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
+
+        <partial name="_ClientTable" />
     }
     else
     {
-        <div class="alert alert-info">
-            No dispute payments found.
-        </div>
+        <div class="alert alert-info">No dispute payments found.</div>
     }
 
-    <a asp-controller="BREB"
-       asp-action="Index"
-       class="btn btn-secondary">
-        Back to BREB
-    </a>
+    <a asp-controller="BREB" asp-action="Index" class="btn btn-secondary">Back to BREB</a>
 </div>

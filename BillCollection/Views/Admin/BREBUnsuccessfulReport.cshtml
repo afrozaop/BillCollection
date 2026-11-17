@@ -1,0 +1,241 @@
+﻿@model BillCollection.ViewModels.BREB.BREBAdminCollectionReportViewModel
+
+@{
+    ViewData["Title"] = "BREB Unsuccessful Report";
+}
+
+<div class="container-fluid mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-exclamation-triangle text-danger"></i>
+                BREB Unsuccessful Report
+            </h2>
+            <p class="text-muted mb-0">
+                View unsuccessful BREB payment transactions by date and branch.
+            </p>
+        </div>
+
+        <a asp-controller="Admin"
+           asp-action="Index"
+           class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Dashboard
+        </a>
+    </div>
+
+    <!-- SEARCH -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="bi bi-search me-1"></i>
+                Search Unsuccessful Transactions
+            </h5>
+        </div>
+
+        <div class="card-body">
+
+            <form asp-controller="Admin"
+                  asp-action="BREBUnsuccessfulReport"
+                  method="get"
+                  class="row g-3">
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        Collection Date
+                    </label>
+
+                    <input type="date"
+                           name="collectionDate"
+                           value="@Model.CollectionDate.ToString("yyyy-MM-dd")"
+                           class="form-control"
+                           required />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        Branch Code
+                    </label>
+
+                    <input type="text"
+                           name="branchCode"
+                           value="@Model.BranchCode"
+                           class="form-control"
+                           placeholder="Enter Branch Code (e.g. 0201)" />
+                </div>
+
+                <div class="col-md-4 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search me-1"></i>
+                        Search
+                    </button>
+
+                    <a asp-controller="Admin"
+                       asp-action="BREBUnsuccessfulReport"
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Reset
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="text-muted">Total Unsuccessful Transactions</div>
+                    <h3 class="fw-bold text-danger mb-0">
+                        @Model.TotalTransactions
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="text-muted">Total Unsuccessful Amount</div>
+                    <h3 class="fw-bold mb-0">
+                        @Model.TotalCollectionAmount.ToString("N2")
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="text-muted">Total VAT</div>
+                    <h3 class="fw-bold mb-0">
+                        @Model.TotalVat.ToString("N2")
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- TRANSACTION TABLE -->
+    <div class="card shadow-sm border-0">
+
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-table me-1"></i>
+                Unsuccessful Transaction Details
+            </h5>
+
+            <span class="badge bg-danger">
+                @Model.Transactions.Count Records
+            </span>
+        </div>
+
+        <div class="card-body">
+
+            @if (Model.Transactions.Any())
+            {
+                <div class="table-responsive">
+
+                    <table class="table table-bordered table-hover align-middle">
+
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Collection Date</th>
+                                <th>Branch Code</th>
+                                <th>Branch Name</th>
+                                <th>SMS Account No</th>
+                                <th>Ref No</th>
+                                <th>Transaction ID</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-end">VAT</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @{
+                                int serial = 1;
+                            }
+
+                            @foreach (var item in Model.Transactions)
+                            {
+                                <tr>
+                                    <td>@serial</td>
+
+                                    <td>
+                                        @item.CollectionDate?.ToString("dd-MMM-yyyy HH:mm:ss")
+                                    </td>
+
+                                    <td>@item.BranchCode</td>
+
+                                    <td>@item.BranchName</td>
+
+                                    <td>@item.SMSAccountNo</td>
+
+                                    <td>@item.RefNo</td>
+
+                                    <td>
+                                        <small>@item.PayerTransactionId</small>
+                                    </td>
+
+                                    <td class="text-end">
+                                        @item.Amount.ToString("N2")
+                                    </td>
+
+                                    <td class="text-end">
+                                        @item.Vat.ToString("N2")
+                                    </td>
+
+                                    <td>
+                                        <span class="badge bg-danger">
+                                            @item.TxnStatus
+                                        </span>
+                                    </td>
+                                </tr>
+
+                                serial++;
+                            }
+                        </tbody>
+
+                        <tfoot class="table-light fw-bold">
+                            <tr>
+                                <td colspan="7" class="text-end">
+                                    Total:
+                                </td>
+                                <td class="text-end">
+                                    @Model.TotalCollectionAmount.ToString("N2")
+                                </td>
+                                <td class="text-end">
+                                    @Model.TotalVat.ToString("N2")
+                                </td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-4 text-muted"></i>
+
+                    <h5 class="mt-3 text-muted">
+                        No unsuccessful transactions found.
+                    </h5>
+
+                    <p class="text-muted mb-0">
+                        Try another collection date or branch code.
+                    </p>
+                </div>
+            }
+
+        </div>
+    </div>
+
+</div>

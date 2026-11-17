@@ -1,133 +1,135 @@
-﻿@model List<BillCollection.Models.BREB.BREBTransaction>
+@model List<BillCollection.Models.BREB.BREBTransaction>
 
 @{
     ViewData["Title"] = "BREB Collection List";
+    var ok = Model?.Where(x => x.TxnStatus == "Success").ToList() ?? new List<BillCollection.Models.BREB.BREBTransaction>();
 }
 
-<div class="container mt-4">
+<div class="container-fluid mt-4">
 
-    <h2>BREB Collection List</h2>
-    @* <p class="text-muted">
-        Test Mode - BREB API is not connected.
-    </p> *@
-
+    <h2>BREB Bill Collection List</h2>
+    <p class="text-muted">All collections of the selected day (today by default).</p>
     <hr />
 
-    <div class="table-responsive">
-        <table class="table table-bordered table-striped align-middle">
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
 
-            <thead class="table-dark">
-                <tr>
-                    <th>Transaction ID</th>
-                    <th>SMS Account No</th>
-                    <th>Reference No</th>
-                    <th>Bill Month</th>
-                    <th>Amount</th>
-                    <th>VAT</th>
-                    <th>Status</th>
-                    <th>Collection Date</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
+    <form method="get" asp-action="CollectionList" class="row g-2 align-items-end mb-3">
+        <div class="col-auto">
+            <label class="form-label" for="date">Collection Date</label>
+            <input type="date" id="date" name="date" class="form-control" value="@ViewBag.Date" />
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Show</button>
+            <a asp-action="CollectionList" class="btn btn-outline-secondary">Today</a>
+        </div>
+    </form>
 
-            <tbody>
+    @if (Model != null && Model.Any())
+    {
+        <div class="alert alert-secondary py-2">
+            Successful: <strong>@ok.Count</strong> bill(s),
+            Amount <strong>@ok.Sum(x => x.Amount).ToString("N2")</strong>
+            (VAT included: @ok.Sum(x => x.Vat).ToString("N2"))
+        </div>
 
-                @if (Model != null && Model.Any())
-                {
-                    foreach (var item in Model)
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped align-middle" data-client-table>
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Transaction ID</th>
+                        <th>SMS Account No</th>
+                        <th>Reference No</th>
+                        <th>Due Type</th>
+                        <th>Bill Month</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-end">VAT</th>
+                        <th>Status</th>
+                        <th>Message</th>
+                        <th>Collection Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
                     {
                         <tr>
                             <td>@item.Id</td>
+                            <td>@item.PayerTransactionId</td>
                             <td>@item.SMSAccountNo</td>
-                            <td>@item.RefNo</td>
+                            <td class="text-break">@item.RefNo</td>
+                            <td>@item.DueType</td>
                             <td>@item.BillMonth</td>
-                            <td>@item.Amount.ToString("N2")</td>
-                            <td>@item.Vat.ToString("N2")</td>
-
+                            <td class="text-end">@item.Amount.ToString("N2")</td>
+                            <td class="text-end">@item.Vat.ToString("N2")</td>
                             <td>
                                 @if (item.TxnStatus == "Success")
                                 {
-                                    <span class="badge bg-success">
-                                        Success
-                                    </span>
+                                    <span class="badge bg-success">Success</span>
                                 }
                                 else if (item.TxnStatus == "WaitingForAcknowledgement")
                                 {
-                                    <span class="badge bg-warning text-dark">
-                                        Waiting For Acknowledgement
-                                    </span>
+                                    <span class="badge bg-warning text-dark">Waiting For Acknowledgement</span>
                                 }
                                 else if (item.TxnStatus == "BillFound")
                                 {
-                                    <span class="badge bg-info text-dark">
-                                        Bill Found
-                                    </span>
+                                    <span class="badge bg-info text-dark">Bill Found</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-danger">
-                                        @item.TxnStatus
-                                    </span>
+                                    <span class="badge bg-danger">@item.TxnStatus</span>
                                 }
                             </td>
-
+                            <td class="small">@item.Message</td>
+                            <td>@item.CreatedOn.ToString("dd-MMM-yyyy hh:mm tt")</td>
                             <td>
-                                @item.CreatedOn.ToString("dd-MMM-yyyy hh:mm tt")
-                            </td>
-
-                            <td>
-                                @if (item.TxnStatus == "WaitingForAcknowledgement")
+                                @if (item.TxnStatus == "Success")
                                 {
-                                    <form asp-controller="BREB"
-                                          asp-action="AcknowledgePayment"
-                                          method="post">
-
-                                        @Html.AntiForgeryToken()
-
-                                        <input type="hidden"
-                                               name="transactionId"
-                                               value="@item.Id" />
-
-                                        <button type="submit"
-                                                class="btn btn-success btn-sm"
-                                                onclick="return confirm('Are you sure you want to test acknowledge this payment?');">
-                                            Test Acknowledge
-                                        </button>
-                                    </form>
+                                    <a asp-action="BillReceipt" asp-route-id="@item.Id" target="_blank"
+                                       class="btn btn-sm btn-primary">Bill Receipt</a>
                                 }
-                                else if (item.TxnStatus == "Success")
-                                {
-                                    <span class="text-success">
-                                        <i class="bi bi-check-circle"></i>
-                                        Acknowledged
-                                    </span>
-                                }
-                                else
+                                else if (item.TxnStatus == "BillFound")
                                 {
                                     <span class="text-muted">No Action</span>
+                                }
+                                else
+                                {
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @if (item.TxnStatus == "WaitingForAcknowledgement")
+                                        {
+                                            <form asp-controller="BREB" asp-action="AcknowledgePayment" method="post"
+                                                  onsubmit="return confirm('Acknowledge this payment with BREB?');">
+                                                <input type="hidden" name="transactionId" value="@item.Id" />
+                                                <button type="submit" class="btn btn-success btn-sm">Acknowledge</button>
+                                            </form>
+                                        }
+                                        <partial name="_RowActions" model="@(new BillCollection.ViewModels.BREB.BREBRowActionViewModel
+                                        {
+                                            TransactionId = item.Id,
+                                            ReturnTo = "CollectionList"
+                                        })" />
+                                    </div>
                                 }
                             </td>
                         </tr>
                     }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="9" class="text-center">
-                            No transactions found.
-                        </td>
-                    </tr>
-                }
+                </tbody>
+            </table>
+        </div>
 
-            </tbody>
+        <partial name="_ClientTable" />
+    }
+    else
+    {
+        <div class="alert alert-info">No transactions found for this date.</div>
+    }
 
-        </table>
-    </div>
-
-    <a asp-controller="BREB"
-       asp-action="Index"
-       class="btn btn-secondary">
-        Back to BREB
-    </a>
-
+    <a asp-controller="BREB" asp-action="Index" class="btn btn-secondary">Back to BREB</a>
 </div>

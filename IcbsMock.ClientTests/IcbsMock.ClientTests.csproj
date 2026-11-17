@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\BillCollection\Models\BREB\BREBApiModels.cs" />
+    <Compile Include="..\BillCollection\Models\BREB\BREBFlexibleStringConverter.cs" />
+    <Compile Include="..\BillCollection\Models\BREB\BREBTokenResponse.cs" />
+    <Compile Include="..\BillCollection\Models\BREB\BREBOptions.cs" />
+    <Compile Include="..\BillCollection\Models\BREB\BREBBillingInfoRequest.cs" />
+    <Compile Include="..\BillCollection\Models\BREB\BREBBillingInfoResponse.cs" />
+    <Compile Include="..\BillCollection\Models\BREB\BREBPaymentSubmitRequest.cs" />
+    <Compile Include="..\BillCollection\Models\BREB\BREBPaymentSubmitResponse.cs" />
+    <Compile Include="..\BillCollection\Models\BREB\BREBPaymentAcknowledgmentRequest.cs" />
+    <Compile Include="..\BillCollection\Models\BREB\BREBPaymentAcknowledgmentResponse.cs" />
+    <Compile Include="..\BillCollection\Services\BREBApiClient.cs" />
+    <Compile Include="..\BillCollection\Services\BREBTokenProvider.cs" />
+    <Compile Include="..\BillCollection\Services\BREBJson.cs" />
+    <Compile Include="..\BillCollection\Interfaces\IBREBApiClient.cs" />
+    <Compile Include="..\BillCollection\Interfaces\IBREBTokenProvider.cs" />
+  </ItemGroup>
+</Project>

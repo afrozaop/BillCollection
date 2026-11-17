@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
+using BillCollection.ViewModels.BREB;   
 
 namespace BillCollection.Controllers
 {
@@ -662,5 +663,51 @@ namespace BillCollection.Controllers
                 $"{Convert.ToBase64String(salt)}." +
                 $"{Convert.ToBase64String(hash)}";
         }
+
+
+
+
+        // =========================================================
+        // BREB ADMIN COLLECTION REPORT
+        // =========================================================
+
+        [HttpGet]
+        public async Task<IActionResult> BREBCollectionReport(
+            DateTime? collectionDate,
+            string? branchCode)
+        {
+            // Default date: Today
+            var selectedDate = collectionDate?.Date
+                               ?? DateTime.Today;
+
+            // Load report
+            var model =
+                await _adminService.GetBREBAdminCollectionReportAsync(
+                    selectedDate,
+                    branchCode);
+
+            return View(model);
+        }
+
+
+
+
+        [HttpGet]
+        public async Task<IActionResult> BREBUnsuccessfulReport(
+            DateTime? collectionDate,
+            string? branchCode)
+        {
+            var selectedDate = collectionDate?.Date ?? DateTime.Today;
+
+            var model = await _adminService
+                .GetBREBAdminUnsuccessfulReportAsync(
+                    selectedDate,
+                    branchCode);
+
+            return View(model);
+        }
+
+
+
     }
 }

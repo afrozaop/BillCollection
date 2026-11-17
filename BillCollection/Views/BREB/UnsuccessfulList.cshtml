@@ -1,67 +1,111 @@
-﻿@model List<BillCollection.Models.BREB.BREBTransaction>
+@model List<BillCollection.Models.BREB.BREBTransaction>
 
 @{
     ViewData["Title"] = "BREB Unsuccessful Payments";
 }
 
-<div class="container mt-4">
+<div class="container-fluid mt-4">
 
-    <h2>BREB Unsuccessful Payments</h2>
-
+    <h2>BREB Unsuccessful Collection List</h2>
+    <p class="text-muted">
+        Failed, pending and not-yet-acknowledged payments (all days unless a date is chosen).
+        <strong>Check &amp; Sync</strong> asks BREB for the real status.
+        If BREB says <em>"Waiting for Acknowledge"</em> use <strong>Acknowledge</strong>, or send an
+        Acknowledge dispute from <a asp-action="DisputeList">Dispute Bill</a>.
+    </p>
     <hr />
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <form method="get" asp-action="UnsuccessfulList" class="row g-2 align-items-end mb-3">
+        <div class="col-auto">
+            <label class="form-label" for="date">Collection Date</label>
+            <input type="date" id="date" name="date" class="form-control" value="@ViewBag.Date" />
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Show</button>
+            <a asp-action="UnsuccessfulList" class="btn btn-outline-secondary">Show all</a>
+        </div>
+    </form>
 
     @if (Model != null && Model.Any())
     {
         <div class="table-responsive">
-            <table class="table table-bordered table-striped">
-
+            <table class="table table-bordered table-striped align-middle" data-client-table>
                 <thead class="table-dark">
                     <tr>
+                        <th>#</th>
                         <th>Transaction ID</th>
                         <th>SMS Account No</th>
                         <th>Reference No</th>
                         <th>Bill Month</th>
-                        <th>Amount</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-end">VAT</th>
                         <th>Status</th>
+                        <th>Message</th>
                         <th>Date</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
-
                 <tbody>
                     @foreach (var item in Model)
                     {
                         <tr>
                             <td>@item.Id</td>
+                            <td>@item.PayerTransactionId</td>
                             <td>@item.SMSAccountNo</td>
-                            <td>@item.RefNo</td>
+                            <td class="text-break">@item.RefNo</td>
                             <td>@item.BillMonth</td>
-                            <td>@item.Amount.ToString("N2")</td>
+                            <td class="text-end">@item.Amount.ToString("N2")</td>
+                            <td class="text-end">@item.Vat.ToString("N2")</td>
                             <td>
-                                <span class="badge bg-warning text-dark">
-                                    @item.TxnStatus
-                                </span>
+                                @if (item.TxnStatus == "Failed")
+                                {
+                                    <span class="badge bg-danger">Failed</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark">@item.TxnStatus</span>
+                                }
                             </td>
+                            <td class="small">@item.Message</td>
+                            <td>@item.CreatedOn.ToString("dd-MMM-yyyy hh:mm tt")</td>
                             <td>
-                                @item.CreatedOn.ToString("dd-MMM-yyyy hh:mm tt")
+                                <div class="d-flex flex-wrap gap-1">
+                                    @if (item.TxnStatus == "WaitingForAcknowledgement")
+                                    {
+                                        <form asp-controller="BREB" asp-action="AcknowledgePayment" method="post"
+                                              onsubmit="return confirm('Acknowledge this payment with BREB?');">
+                                            <input type="hidden" name="transactionId" value="@item.Id" />
+                                            <button type="submit" class="btn btn-sm btn-success">Acknowledge</button>
+                                        </form>
+                                    }
+                                    <partial name="_RowActions" model="@(new BillCollection.ViewModels.BREB.BREBRowActionViewModel
+                                    {
+                                        TransactionId = item.Id,
+                                        ReturnTo = "UnsuccessfulList"
+                                    })" />
+                                </div>
                             </td>
                         </tr>
                     }
                 </tbody>
-
             </table>
         </div>
+
+        <partial name="_ClientTable" />
     }
     else
     {
-        <div class="alert alert-info">
-            No unsuccessful or pending payments found.
-        </div>
+        <div class="alert alert-info">No unsuccessful or pending payments found.</div>
     }
 
-    <a asp-controller="BREB"
-       asp-action="Index"
-       class="btn btn-secondary">
-        Back to BREB
-    </a>
-
+    <a asp-controller="BREB" asp-action="Index" class="btn btn-secondary">Back to BREB</a>
 </div>

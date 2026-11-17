@@ -1,0 +1,101 @@
+@model BillCollection.ViewModels.BREB.BREBSummaryReportViewModel
+
+@{
+    ViewData["Title"] = "BREB Summary Report";
+}
+
+<div class="container mt-4">
+    <h2>BREB Summary Report</h2>
+    <p class="text-muted">Daily totals in this system compared with BREB (<code>report/summary</code>).</p>
+
+    @if (Model.IsMockMode)
+    {
+        <div class="alert alert-warning"><strong>TEST MODE</strong> - BREB side is simulated from the local records.</div>
+    }
+    @if (!string.IsNullOrEmpty(Model.BrebError))
+    {
+        <div class="alert alert-danger">
+            <strong>Could not load the BREB report:</strong> @Model.BrebError
+        </div>
+    }
+
+    <form method="get" asp-action="SummaryReport" class="row g-2 align-items-end mb-4">
+        <div class="col-auto">
+            <label class="form-label" for="from">From</label>
+            <input type="date" id="from" name="from" class="form-control" value="@Model.From.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="col-auto">
+            <label class="form-label" for="to">To</label>
+            <input type="date" id="to" name="to" class="form-control" value="@Model.To.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Show</button>
+        </div>
+    </form>
+
+    @if (Model.Rows.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th rowspan="2">Date</th>
+                        <th colspan="3" class="text-center">This system</th>
+                        <th colspan="3" class="text-center">BREB</th>
+                        <th rowspan="2">Status</th>
+                    </tr>
+                    <tr>
+                        <th class="text-end">Bills</th><th class="text-end">Amount</th><th class="text-end">VAT</th>
+                        <th class="text-end">Bills</th><th class="text-end">Amount</th><th class="text-end">VAT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Rows)
+                    {
+                        <tr>
+                            <td>@r.Date.ToString("dd-MMM-yyyy")</td>
+                            <td class="text-end">@r.LocalCount</td>
+                            <td class="text-end">@r.LocalAmount.ToString("N2")</td>
+                            <td class="text-end">@r.LocalVat.ToString("N2")</td>
+                            <td class="text-end">@r.BrebCount</td>
+                            <td class="text-end">@r.BrebAmount.ToString("N2")</td>
+                            <td class="text-end">@r.BrebVat.ToString("N2")</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(Model.BrebError))
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                                else if (r.Match)
+                                {
+                                    <span class="badge bg-success">Matched</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Mismatch</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="table-light fw-bold">
+                    <tr>
+                        <td>Total</td>
+                        <td class="text-end">@Model.LocalCount</td>
+                        <td class="text-end">@Model.LocalAmount.ToString("N2")</td>
+                        <td></td>
+                        <td class="text-end">@Model.BrebCount</td>
+                        <td class="text-end">@Model.BrebAmount.ToString("N2")</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">No payments found for this period.</div>
+    }
+
+    <a asp-controller="BREB" asp-action="Index" class="btn btn-secondary">Back to BREB</a>
+</div>
