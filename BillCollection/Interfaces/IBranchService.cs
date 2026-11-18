@@ -1,4 +1,5 @@
-﻿using BillCollection.Models;
+using BillCollection.Models;
+using BillCollection.ViewModels;
 
 namespace BillCollection.Interfaces
 {
@@ -9,6 +10,11 @@ namespace BillCollection.Interfaces
 
         Task<List<BranchBillProvider>>
             GetAssignedProvidersAsync(
+                int branchId);
+
+        /// <summary>Provider-wise summary for the branch dashboard (null = branch not found).</summary>
+        Task<BranchDashboardViewModel?>
+            GetDashboardAsync(
                 int branchId);
     }
 }

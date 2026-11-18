@@ -1,4 +1,4 @@
-﻿using BillCollection.Interfaces;
+using BillCollection.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,24 +32,17 @@ namespace BillCollection.Controllers
                 return Forbid();
             }
 
-            var branch =
+            var model =
                 await _branchService
-                    .GetBranchAsync(branchId);
+                    .GetDashboardAsync(branchId);
 
-            if (branch == null)
+            if (model == null)
             {
                 return NotFound(
                     "Branch not found.");
             }
 
-            var providers =
-                await _branchService
-                    .GetAssignedProvidersAsync(
-                        branchId);
-
-            ViewBag.Branch = branch;
-
-            return View(providers);
+            return View(model);
         }
     }
 }
