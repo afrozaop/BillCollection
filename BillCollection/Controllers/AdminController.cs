@@ -1,4 +1,4 @@
-﻿using BillCollection.Interfaces;
+using BillCollection.Interfaces;
 using BillCollection.Models;
 using BillCollection.Models.ViewModels;
 using BillCollection.ViewModels;
@@ -606,6 +606,9 @@ namespace BillCollection.Controllers
                 _accountService.CreatePasswordHash(
                     defaultPassword);
 
+            // forces "change password" at the next login
+            user.LastLoginDate = null;
+
 
             // -----------------------------------------------------
             // SAVE
@@ -708,6 +711,85 @@ namespace BillCollection.Controllers
         }
 
 
+
+
+        // =========================================================
+        // BREB ADMIN SUMMARY REPORT (per branch, per day)
+        // =========================================================
+
+        [HttpGet]
+        public async Task<IActionResult> BREBSummaryReport(
+            DateTime? from,
+            DateTime? to,
+            string? branchCode)
+        {
+            var start = from?.Date ?? DateTime.Today;
+            var end = to?.Date ?? start;
+
+            var model =
+                await _adminService.GetBREBAdminSummaryReportAsync(
+                    start,
+                    end,
+                    branchCode);
+
+            return View(model);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> BREBSummaryReportCsv(
+            DateTime? from,
+            DateTime? to,
+            string? branchCode)
+        {
+            var start = from?.Date ?? DateTime.Today;
+            var end = to?.Date ?? start;
+
+            var model =
+                await _adminService.GetBREBAdminSummaryReportAsync(
+                    start,
+                    end,
+                    branchCode);
+
+            static string Q(string? value) =>
+                "\"" + (value ?? string.Empty).Replace("\"", "\"\"") + "\"";
+
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var sb = new System.Text.StringBuilder();
+
+            sb.AppendLine("Branch Code,Branch Name,Collection Date,No Of Txn,Revenue,Vat,Txn Amount");
+
+            foreach (var branch in model.Branches)
+            {
+                foreach (var day in branch.Days)
+                {
+                    sb.AppendLine(string.Join(",",
+                        Q(branch.BranchCode),
+                        Q(branch.BranchName),
+                        day.Date.ToString("yyyy-MM-dd", inv),
+                        day.TxnCount.ToString(inv),
+                        day.Revenue.ToString("0.00", inv),
+                        day.Vat.ToString("0.00", inv),
+                        day.Amount.ToString("0.00", inv)));
+                }
+            }
+
+            sb.AppendLine(string.Join(",",
+                "\"Grand Total\"", "\"\"", "\"\"",
+                model.GrandTxnCount.ToString(inv),
+                model.GrandRevenue.ToString("0.00", inv),
+                model.GrandVat.ToString("0.00", inv),
+                model.GrandAmount.ToString("0.00", inv)));
+
+            var preamble = new System.Text.UTF8Encoding(true).GetPreamble();
+            var bytes = preamble
+                .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString()))
+                .ToArray();
+
+            return File(
+                bytes,
+                "text/csv",
+                $"BREB_Summary_{start:yyyyMMdd}_{end:yyyyMMdd}.csv");
+        }
 
     }
 }

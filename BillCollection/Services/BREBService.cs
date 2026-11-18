@@ -779,6 +779,7 @@ namespace BillCollection.Services
                     RefNo = e.RefNo,
                     PayerTransactionId = e.PayerTransactionId,
                     Amount = e.Amount,
+                    Vat = e.Vat,
                     LocalStatus = null,
                     BrebStatus = BrebStatusText(remote[i].Code),
                     Result = "Only at BREB",
@@ -819,6 +820,7 @@ namespace BillCollection.Services
                 RefNo = l.RefNo,
                 PayerTransactionId = l.PayerTransactionId,
                 Amount = l.Amount,
+                Vat = l.Vat,
                 LocalStatus = l.TxnStatus,
                 BrebStatus = code == null ? "Not found" : BrebStatusText(code)
             };

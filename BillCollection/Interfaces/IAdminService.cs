@@ -1,4 +1,4 @@
-﻿using BillCollection.Models;
+using BillCollection.Models;
 using BillCollection.ViewModels.BREB;
 
 
@@ -96,6 +96,12 @@ namespace BillCollection.Interfaces
                 DateTime collectionDate,
                 string? branchCode);
 
+
+        Task<BREBAdminSummaryReportViewModel>
+            GetBREBAdminSummaryReportAsync(
+                DateTime from,
+                DateTime to,
+                string? branchCode);
 
         Task<BREBAdminCollectionReportViewModel>
     GetBREBAdminUnsuccessfulReportAsync(

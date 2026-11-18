@@ -73,14 +73,16 @@
     @if (Model.Rows.Any())
     {
         <div class="table-responsive">
-            <table class="table table-bordered table-hover align-middle">
+            <table class="table table-bordered table-hover align-middle" data-client-table>
                 <thead class="table-dark">
                     <tr>
                         <th>Result</th>
-                        <th>Txn Id</th>
+                        <th>#</th>
+                        <th>Transaction ID</th>
                         <th>SMS Account No</th>
                         <th>Reference No</th>
                         <th class="text-end">Amount</th>
+                        <th class="text-end">VAT</th>
                         <th>Local</th>
                         <th>BREB</th>
                         <th>Note</th>
@@ -102,9 +104,11 @@
                                 }
                             </td>
                             <td>@row.TransactionId</td>
+                            <td>@row.PayerTransactionId</td>
                             <td>@row.SMSAccountNo</td>
                             <td class="text-break">@row.RefNo</td>
                             <td class="text-end">@row.Amount.ToString("N2")</td>
+                            <td class="text-end">@row.Vat.ToString("N2")</td>
                             <td>@row.LocalStatus</td>
                             <td>@row.BrebStatus</td>
                             <td>@row.Note</td>
@@ -125,6 +129,8 @@
                 </tbody>
             </table>
         </div>
+
+        <partial name="_ClientTable" />
     }
     else if (string.IsNullOrEmpty(Model.BrebError))
     {

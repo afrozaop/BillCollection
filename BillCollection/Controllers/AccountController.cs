@@ -1,4 +1,4 @@
-﻿using BillCollection.Interfaces;
+using BillCollection.Interfaces;
 using BillCollection.ViewModels;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -96,6 +96,16 @@ namespace BillCollection.Controllers
                         user.BranchId.Value.ToString()));
             }
 
+            // First login (or password reset by the administrator): nothing but the
+            // Change Password page may be used until the password has been changed.
+            // LastLoginDate stays empty until that has happened.
+            var mustChangePassword = user.LastLoginDate == null;
+
+            if (mustChangePassword)
+            {
+                claims.Add(new Claim("MustChangePassword", "true"));
+            }
+
             var identity =
                 new ClaimsIdentity(
                     claims,
@@ -124,6 +134,11 @@ namespace BillCollection.Controllers
             // =========================
             // UPDATE LAST LOGIN
             // =========================
+
+            if (mustChangePassword)
+            {
+                return RedirectToAction(nameof(ChangePassword));
+            }
 
             await _accountService
                 .UpdateLastLoginAsync(user.Id);
@@ -159,6 +174,12 @@ namespace BillCollection.Controllers
         }
 
 
+        private static readonly HashSet<string> WeakPasswords =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                "123456", "1234567", "12345678", "password", "Test@12345", "admin123", "bkbvas"
+            };
+
         // =========================
         // CHANGE PASSWORD - GET
         // =========================
@@ -167,6 +188,7 @@ namespace BillCollection.Controllers
         [Authorize]
         public IActionResult ChangePassword()
         {
+            ViewBag.MustChange = User.HasClaim("MustChangePassword", "true");
             return View();
         }
 
@@ -181,8 +203,29 @@ namespace BillCollection.Controllers
         public async Task<IActionResult> ChangePassword(
             ChangePasswordViewModel model)
         {
+            var mustChange = User.HasClaim("MustChangePassword", "true");
+            ViewBag.MustChange = mustChange;
+
             if (!ModelState.IsValid)
             {
+                return View(model);
+            }
+
+            if (model.NewPassword == model.CurrentPassword)
+            {
+                ModelState.AddModelError(
+                    "NewPassword",
+                    "The new password must be different from the current password.");
+
+                return View(model);
+            }
+
+            if (WeakPasswords.Contains(model.NewPassword))
+            {
+                ModelState.AddModelError(
+                    "NewPassword",
+                    "This password is too common. Please choose another one.");
+
                 return View(model);
             }
 
@@ -213,6 +256,45 @@ namespace BillCollection.Controllers
                     "Current password is incorrect.");
 
                 return View(model);
+            }
+
+            if (mustChange)
+            {
+                // The first-login restriction ends here.
+                var idText = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (long.TryParse(idText, out var userId))
+                {
+                    await _accountService.UpdateLastLoginAsync(userId);
+                }
+
+                var authResult =
+                    await HttpContext.AuthenticateAsync(
+                        CookieAuthenticationDefaults.AuthenticationScheme);
+
+                var keptClaims =
+                    User.Claims
+                        .Where(c => c.Type != "MustChangePassword")
+                        .ToList();
+
+                var newIdentity =
+                    new ClaimsIdentity(
+                        keptClaims,
+                        CookieAuthenticationDefaults.AuthenticationScheme);
+
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    new ClaimsPrincipal(newIdentity),
+                    authResult?.Properties);
+
+                TempData["SuccessMessage"] =
+                    "Password changed successfully. You can continue now.";
+
+                var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+                return role == "HeadOffice"
+                    ? RedirectToAction("Index", "Admin")
+                    : RedirectToAction("Index", "Branch");
             }
 
             TempData["SuccessMessage"] =

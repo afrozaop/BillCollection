@@ -1,4 +1,4 @@
-﻿using BillCollection.Interfaces;
+using BillCollection.Interfaces;
 using BillCollection.Models;
 using BillCollection.Services;
 using Microsoft.AspNetCore.Authentication;
@@ -171,6 +171,32 @@ app.UseRouting();
 
 // Authentication must come before Authorization
 app.UseAuthentication();
+
+// First login / password reset: only the Change Password page (and Logout) may be used
+// until the password has been changed.
+app.Use(async (context, next) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true &&
+        context.User.HasClaim("MustChangePassword", "true"))
+    {
+        var path = context.Request.Path;
+
+        var allowed =
+            path.StartsWithSegments("/Account/ChangePassword", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWithSegments("/Account/Logout", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWithSegments("/Account/AccessDenied", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWithSegments("/_framework", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWithSegments("/_vs", StringComparison.OrdinalIgnoreCase);
+
+        if (!allowed)
+        {
+            context.Response.Redirect("/Account/ChangePassword");
+            return;
+        }
+    }
+
+    await next();
+});
 
 app.UseAuthorization();
 

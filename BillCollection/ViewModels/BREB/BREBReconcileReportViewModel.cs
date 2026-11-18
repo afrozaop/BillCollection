@@ -37,6 +37,7 @@ namespace BillCollection.ViewModels.BREB
         public string? RefNo { get; set; }
         public string? PayerTransactionId { get; set; }
         public decimal Amount { get; set; }
+        public decimal Vat { get; set; }
         public string? LocalStatus { get; set; }
         public string? BrebStatus { get; set; }
 

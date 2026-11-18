@@ -1,4 +1,4 @@
-﻿@inject BillCollection.Interfaces.IBranchService BranchService
+@inject BillCollection.Interfaces.IBranchService BranchService
 @inject BillCollection.Interfaces.IAdminService AdminService
 
 @{
@@ -448,6 +448,16 @@
 
                                         <i class="bi bi-file-earmark-bar-graph me-2"></i>
                                         Collection Report
+
+                                    </a>
+
+                                    <a class="nav-link @(currentController == "Admin" &&
+                                                            currentAction == "BREBSummaryReport" ? "active" : "")"
+                                       asp-controller="Admin"
+                                       asp-action="BREBSummaryReport">
+
+                                        <i class="bi bi-table me-2"></i>
+                                        Summary Report
 
                                     </a>
 

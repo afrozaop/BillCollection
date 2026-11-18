@@ -1,4 +1,4 @@
-﻿using BillCollection.Interfaces;
+using BillCollection.Interfaces;
 using BillCollection.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
@@ -90,6 +90,9 @@ namespace BillCollection.Services
 
             user.PasswordHash =
                 CreatePasswordHash(defaultPassword);
+
+            // forces "change password" at the next login
+            user.LastLoginDate = null;
 
             await _context.SaveChangesAsync();
 

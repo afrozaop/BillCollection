@@ -1,4 +1,4 @@
-﻿using BillCollection.Interfaces;
+using BillCollection.Interfaces;
 using BillCollection.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -487,6 +487,9 @@ namespace BillCollection.Services
                     user,
                     newPassword);
 
+            // forces "change password" at the next login
+            user.LastLoginDate = null;
+
             await _context.SaveChangesAsync();
         }
 
@@ -510,7 +513,8 @@ namespace BillCollection.Services
                 join branch in _context.Branches.AsNoTracking()
                     on transaction.BranchId equals branch.Id
 
-                where transaction.PaymentTimestamp >= startDate
+                where transaction.TxnStatus == "Success"
+                      && transaction.PaymentTimestamp >= startDate
                       && transaction.PaymentTimestamp < endDate
 
                 select new BREBAdminCollectionReportRowViewModel
@@ -564,6 +568,103 @@ namespace BillCollection.Services
             };
         }
 
+
+
+        // =========================================================
+        // BREB ADMIN SUMMARY REPORT (per branch, per day, successful only)
+        // Revenue = Amount - VAT, Txn Amount = Amount
+        // =========================================================
+
+        public async Task<BREBAdminSummaryReportViewModel>
+            GetBREBAdminSummaryReportAsync(
+                DateTime from,
+                DateTime to,
+                string? branchCode)
+        {
+            // note: "from" is a C# query keyword, so the query below uses startDate / endExclusive
+            var startDate = from.Date;
+            var lastDate = to.Date;
+
+            if (lastDate < startDate)
+            {
+                (startDate, lastDate) = (lastDate, startDate);
+            }
+
+            var endExclusive = lastDate.AddDays(1);
+
+            var query =
+                from transaction in _context.BREBTransactions.AsNoTracking()
+
+                join branch in _context.Branches.AsNoTracking()
+                    on transaction.BranchId equals branch.Id
+
+                where transaction.TxnStatus == "Success"
+                      && transaction.CreatedOn >= startDate
+                      && transaction.CreatedOn < endExclusive
+
+                select new
+                {
+                    branch.BranchCode,
+                    BranchName = branch.Name,
+                    transaction.CreatedOn,
+                    transaction.Amount,
+                    transaction.Vat
+                };
+
+            if (!string.IsNullOrWhiteSpace(branchCode))
+            {
+                var code = branchCode.Trim();
+
+                query = query.Where(x => x.BranchCode.Contains(code));
+            }
+
+            var rows = await query
+                .GroupBy(x => new
+                {
+                    x.BranchCode,
+                    x.BranchName,
+                    Day = x.CreatedOn.Date
+                })
+                .Select(g => new
+                {
+                    g.Key.BranchCode,
+                    g.Key.BranchName,
+                    g.Key.Day,
+                    Count = g.Count(),
+                    Amount = g.Sum(x => x.Amount),
+                    Vat = g.Sum(x => x.Vat)
+                })
+                .OrderBy(x => x.BranchCode)
+                .ThenBy(x => x.Day)
+                .ToListAsync();
+
+            var model = new BREBAdminSummaryReportViewModel
+            {
+                From = startDate,
+                To = lastDate,
+                BranchCode = branchCode
+            };
+
+            foreach (var group in rows.GroupBy(x => new { x.BranchCode, x.BranchName }))
+            {
+                model.Branches.Add(new BREBAdminSummaryBranchViewModel
+                {
+                    BranchCode = group.Key.BranchCode,
+                    BranchName = group.Key.BranchName,
+                    Days = group
+                        .Select(x => new BREBAdminSummaryDayViewModel
+                        {
+                            Date = x.Day,
+                            TxnCount = x.Count,
+                            Amount = x.Amount,
+                            Vat = x.Vat
+                        })
+                        .ToList()
+                });
+            }
+
+            return model;
+        }
 
 
         // =========================================================
